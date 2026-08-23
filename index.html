@@ -342,7 +342,8 @@
       const file = fileInput.files[0];
 
       try {
-        const fileName = `${Date.now()}_${file.name}`;
+        const fileExt = file.name.split('.').pop().toLowerCase();
+const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
         const { error: uploadErr } = await supabaseClient
           .storage
           .from('samanmitr-photos')
