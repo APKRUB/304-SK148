@@ -32,7 +32,7 @@
 
   <!-- Config Supabase -->
   <script>
-    const SUPABASE_URL = "https://xgoohfiaefkfpdracfri.supabase.co";
+    const SUPABASE_URL = "https://xgoohfiaefkfpdracfri.supabase.co/";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhnb29oZmlhZWZrZnBkcmFjZnJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0OTI4MzEsImV4cCI6MjEwMzA2ODgzMX0.R7oDHuP3lHexqS9sNSwuFdjCuvHmBOS4qj3dYjcahPA";
     const SECRET_ADMIN_KEY = "m304admin"; // รหัสผ่านสำหรับ URL ลับ เช่น ?admin=m304admin
 
@@ -65,7 +65,7 @@
 
   <div class="pt-24 pb-12 px-4 max-w-7xl mx-auto min-h-screen">
 
-    <!-- Screen 2: Form Upload (Default Visible Entry) -->
+    <!-- Screen 2: Form Upload (Default Entry) -->
     <section id="view-upload" class="max-w-lg mx-auto bg-slate-800/80 backdrop-blur-md p-8 rounded-2xl border border-white/10 shadow-2xl">
       <h2 class="text-2xl font-bold text-pink-400 mb-6 text-center">ฝากความทรงจำถึงห้อง ม.304</h2>
       
@@ -89,6 +89,15 @@
         <div>
           <label class="block text-sm font-medium text-slate-300 mb-1">รูปภาพความทรงจำ (1 ภาพ)</label>
           <input type="file" id="input-image" accept="image/*" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-pink-600 file:text-white hover:file:bg-pink-500">
+        </div>
+
+        <!-- ตัวเลือกกรอบรูป / สไตล์การตัดรูป -->
+        <div>
+          <label class="block text-sm font-medium text-slate-300 mb-1">สไตล์การแสดงผลรูปภาพ</label>
+          <select id="input-fit" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 focus:border-pink-500 focus:outline-none text-white">
+            <option value="contain">🖼️ เห็นรูปเต็มใบ (ไม่โดนตัดขอบ - แนะนำสำหรับแนวตั้ง/แนวนอน)</option>
+            <option value="cover">✂️ สี่เหลี่ยมจัตุรัส (ครอบตัดพอดีกรอบสไตล์ IG)</option>
+          </select>
         </div>
 
         <div>
@@ -129,6 +138,7 @@
               <th class="p-4">ชื่อ</th>
               <th class="p-4">สถานะ</th>
               <th class="p-4">ความรู้สึก</th>
+              <th class="p-4">สไตล์รูป</th>
               <th class="p-4">วันที่</th>
               <th class="p-4 text-center">จัดการ</th>
             </tr>
@@ -143,10 +153,15 @@
   </div>
 
   <!-- Detail Modal -->
-  <div id="card-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden z-50 flex items-center justify-center p-4" onclick="closeModal()">
+  <div id="card-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden z-50 flex items-center justify-center p-4" onclick="closeModal()">
     <div class="bg-slate-800 border border-slate-700 max-w-md w-full rounded-2xl overflow-hidden shadow-2xl relative" onclick="event.stopPropagation()">
-      <button onclick="closeModal()" class="absolute top-3 right-3 text-white bg-black/50 hover:bg-black/80 rounded-full w-8 h-8 flex items-center justify-center">✕</button>
-      <img id="modal-img" src="" class="w-full h-64 object-cover">
+      <button onclick="closeModal()" class="absolute top-3 right-3 text-white bg-black/60 hover:bg-black/90 rounded-full w-8 h-8 flex items-center justify-center z-10">✕</button>
+      
+      <!-- Container รูปภาพของ Modal -->
+      <div id="modal-img-container" class="bg-black/40 flex items-center justify-center p-2 max-h-[60vh] overflow-hidden">
+        <img id="modal-img" src="" class="transition-all duration-300">
+      </div>
+
       <div class="p-6">
         <div class="flex items-center gap-2 mb-2">
           <span id="modal-role" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/30"></span>
@@ -165,7 +180,7 @@
       <div class="space-y-3">
         <div>
           <label class="text-xs text-slate-400">ชื่อ</label>
-          <input type="text" id="edit-name" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm">
+          <input type="text" id="edit-name" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white">
         </div>
         <div>
           <label class="text-xs text-slate-400">สถานะ</label>
@@ -178,8 +193,15 @@
           </select>
         </div>
         <div>
+          <label class="text-xs text-slate-400">สไตล์การแสดงผลรูปภาพ</label>
+          <select id="edit-fit" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white">
+            <option value="contain">🖼️ เห็นรูปเต็มใบ (Contain)</option>
+            <option value="cover">✂️ สี่เหลี่ยมจัตุรัส (Cover)</option>
+          </select>
+        </div>
+        <div>
           <label class="text-xs text-slate-400">ความรู้สึก</label>
-          <textarea id="edit-impression" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm"></textarea>
+          <textarea id="edit-impression" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white"></textarea>
         </div>
         <div class="flex justify-end gap-2 pt-2">
           <button onclick="closeEditModal()" class="px-4 py-2 bg-slate-700 text-sm rounded-lg">ยกเลิก</button>
@@ -193,20 +215,18 @@
     let allMemories = [];
     let isAdmin = false;
 
-    // --- Safe Init Supabase ---
     function initSupabase() {
       try {
         if (window.supabase && SUPABASE_URL && !SUPABASE_URL.includes("วาง_PROJECT_URL")) {
-          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        } else {
-          console.warn("Supabase URL หรือ Key ยังไม่ได้ถูกตั้งค่าให้ถูกต้อง");
+          let cleanUrl = SUPABASE_URL.trim();
+          if (cleanUrl.endsWith('/')) cleanUrl = cleanUrl.slice(0, -1);
+          supabaseClient = window.supabase.createClient(cleanUrl, SUPABASE_KEY.trim());
         }
       } catch (err) {
         console.error("Supabase Initialization Failed:", err);
       }
     }
 
-    // --- Check Admin & URL Router ---
     function checkAdminStatus() {
       const urlParams = new URLSearchParams(window.location.search);
       isAdmin = (urlParams.get('admin') === SECRET_ADMIN_KEY);
@@ -311,9 +331,12 @@
         card.style.top = `${top}%`;
         card.style.setProperty('--speed', `${speed}s`);
 
+        // เช็กสไตล์รูปภาพ (contain หรือ cover)
+        const fitClass = (item.fit_mode === 'cover') ? 'object-cover' : 'object-contain bg-black/50';
+
         card.innerHTML = `
-          <div class="relative overflow-hidden rounded-lg aspect-square mb-2">
-            <img src="${item.image_url}" class="w-full h-full object-cover">
+          <div class="relative overflow-hidden rounded-lg aspect-square mb-2 bg-slate-900 flex items-center justify-center">
+            <img src="${item.image_url}" class="w-full h-full ${fitClass}">
           </div>
           <p class="text-xs font-bold truncate text-white">${item.name}</p>
           <span class="text-[10px] text-pink-300 bg-pink-500/20 px-1.5 py-0.5 rounded border border-pink-500/30">${item.role}</span>
@@ -327,7 +350,7 @@
     async function handleFormSubmit(e) {
       e.preventDefault();
       if (!supabaseClient) {
-        alert('กรุณาใส่ค่า SUPABASE_URL และ SUPABASE_KEY ในไฟล์ index.html ก่อนใช้งาน');
+        alert('กรุณาตั้งค่า SUPABASE_URL และ SUPABASE_KEY ในไฟล์ index.html ก่อนใช้งาน');
         return;
       }
 
@@ -337,13 +360,15 @@
 
       const name = document.getElementById('input-name').value;
       const role = document.getElementById('input-role').value;
+      const fitMode = document.getElementById('input-fit').value;
       const impression = document.getElementById('input-impression').value;
       const fileInput = document.getElementById('input-image');
       const file = fileInput.files[0];
 
       try {
         const fileExt = file.name.split('.').pop().toLowerCase();
-const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+
         const { error: uploadErr } = await supabaseClient
           .storage
           .from('samanmitr-photos')
@@ -358,9 +383,10 @@ const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${
 
         const imageUrl = urlData.publicUrl;
 
+        // บันทึกลง Database พร้อมคอลัมน์ fit_mode
         const { error: dbErr } = await supabaseClient
           .from('memories')
-          .insert([{ name, role, impression, image_url: imageUrl }]);
+          .insert([{ name, role, impression, image_url: imageUrl, fit_mode: fitMode }]);
 
         if (dbErr) throw dbErr;
 
@@ -393,6 +419,7 @@ const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${
       allMemories.forEach(item => {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-700/50 transition';
+        const fitBadge = item.fit_mode === 'cover' ? '✂️ Cover' : '🖼️ Contain';
         tr.innerHTML = `
           <td class="p-4">
             <img src="${item.image_url}" class="w-12 h-12 object-cover rounded-lg border border-slate-600">
@@ -400,6 +427,7 @@ const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${
           <td class="p-4 font-semibold text-white">${item.name}</td>
           <td class="p-4"><span class="text-xs bg-slate-700 px-2 py-1 rounded">${item.role}</span></td>
           <td class="p-4 text-xs max-w-xs truncate">${item.impression}</td>
+          <td class="p-4 text-xs text-slate-300">${fitBadge}</td>
           <td class="p-4 text-xs text-slate-400">${new Date(item.created_at).toLocaleDateString('th-TH')}</td>
           <td class="p-4 text-center space-x-2">
             <button onclick='openEditModal(${JSON.stringify(item)})' class="px-2.5 py-1 text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded hover:bg-amber-500/30">แก้ไข</button>
@@ -426,6 +454,7 @@ const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${
       document.getElementById('edit-id').value = item.id;
       document.getElementById('edit-name').value = item.name;
       document.getElementById('edit-role').value = item.role;
+      document.getElementById('edit-fit').value = item.fit_mode || 'contain';
       document.getElementById('edit-impression').value = item.impression;
       document.getElementById('edit-modal').classList.remove('hidden');
     }
@@ -438,11 +467,12 @@ const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${
       const id = document.getElementById('edit-id').value;
       const name = document.getElementById('edit-name').value;
       const role = document.getElementById('edit-role').value;
+      const fitMode = document.getElementById('edit-fit').value;
       const impression = document.getElementById('edit-impression').value;
 
       const { error } = await supabaseClient
         .from('memories')
-        .update({ name, role, impression })
+        .update({ name, role, impression, fit_mode: fitMode })
         .eq('id', id);
 
       if (error) {
@@ -460,12 +490,13 @@ const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${
         return;
       }
 
-      const headers = ['ID', 'ชื่อ-นามสกุล', 'สถานะ', 'ความรู้สึก', 'URL รูปภาพ', 'วันที่'];
+      const headers = ['ID', 'ชื่อ-นามสกุล', 'สถานะ', 'ความรู้สึก', 'สไตล์รูป', 'URL รูปภาพ', 'วันที่'];
       const rows = allMemories.map(item => [
         `"${item.id}"`,
         `"${(item.name || '').replace(/"/g, '""')}"`,
         `"${(item.role || '').replace(/"/g, '""')}"`,
         `"${(item.impression || '').replace(/"/g, '""')}"`,
+        `"${item.fit_mode || 'contain'}"`,
         `"${item.image_url}"`,
         `"${new Date(item.created_at).toLocaleString('th-TH')}"`
       ]);
@@ -496,7 +527,15 @@ const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${
     }
 
     function openModal(item) {
-      document.getElementById('modal-img').src = item.image_url;
+      const modalImg = document.getElementById('modal-img');
+      modalImg.src = item.image_url;
+
+      if (item.fit_mode === 'cover') {
+        modalImg.className = "w-full h-72 object-cover rounded-lg shadow-md";
+      } else {
+        modalImg.className = "max-h-[58vh] w-auto max-w-full object-contain rounded-lg shadow-md";
+      }
+
       document.getElementById('modal-name').innerText = item.name;
       document.getElementById('modal-role').innerText = item.role;
       document.getElementById('modal-impression').innerText = item.impression;
