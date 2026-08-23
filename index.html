@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>งานสมานมิตร 69' M.304 - ความทรงจำ</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase JS Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <!-- Canvas Confetti Library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <style>
     @keyframes float {
       0% { transform: translate(0, 0) rotate(0deg); }
@@ -27,6 +30,7 @@
 </head>
 <body id="bg-container" class="bg-slate-900 text-white min-h-screen relative overflow-x-hidden bg-cover bg-center transition-all duration-500">
 
+  <!-- Config Supabase -->
   <script>
     const SUPABASE_URL = "วาง_PROJECT_URL_ตรงนี้";
     const SUPABASE_KEY = "วาง_ANON_KEY_ตรงนี้";
@@ -35,6 +39,7 @@
     let supabaseClient = null;
   </script>
 
+  <!-- Navbar / Header -->
   <header class="fixed top-0 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 px-6 py-4 flex justify-between items-center">
     <h1 class="text-xl font-bold bg-gradient-to-r from-pink-400 to-sky-300 bg-clip-text text-transparent">
       งานสมานมิตร 69' M.304
@@ -50,6 +55,7 @@
         ⚙️ Admin Dashboard
       </a>
 
+      <!-- Background Button (Admin Only) -->
       <label id="bg-uploader-btn" class="hidden px-3 py-2 text-sm rounded-lg bg-slate-800 border border-white/20 hover:bg-slate-700 cursor-pointer">
         🎨 ฉากหลัง
         <input type="file" id="bg-uploader" class="hidden" accept="image/*" onchange="changeBackground(event)">
@@ -59,13 +65,14 @@
 
   <div class="pt-24 pb-12 px-4 max-w-7xl mx-auto min-h-screen">
 
-    <section id="view-upload" class="hidden max-w-lg mx-auto bg-slate-800/80 backdrop-blur-md p-8 rounded-2xl border border-white/10 shadow-2xl">
+    <!-- Screen 2: Form Upload (Default Visible Entry) -->
+    <section id="view-upload" class="max-w-lg mx-auto bg-slate-800/80 backdrop-blur-md p-8 rounded-2xl border border-white/10 shadow-2xl">
       <h2 class="text-2xl font-bold text-pink-400 mb-6 text-center">ฝากความทรงจำถึงห้อง ม.304</h2>
       
       <form id="upload-form" class="space-y-4" onsubmit="handleFormSubmit(event)">
         <div>
           <label class="block text-sm font-medium text-slate-300 mb-1">ชื่อ-นามสกุล / ชื่อเล่น</label>
-          <input type="text" id="input-name" required placeholder="เช่น พี่เอ็ม / ครูสร้อย" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 focus:border-pink-500 focus:outline-none">
+          <input type="text" id="input-name" required placeholder="เช่น พี่เอ็ม / ครูสร้อย" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 focus:border-pink-500 focus:outline-none text-white">
         </div>
 
         <div>
@@ -86,7 +93,7 @@
 
         <div>
           <label class="block text-sm font-medium text-slate-300 mb-1">ความรู้สึกที่มีต่อห้อง ม.304</label>
-          <textarea id="input-impression" rows="4" required placeholder="พิมพ์ความประทับใจ หรือข้อความที่อยากบอกพวกเรา..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 focus:border-pink-500 focus:outline-none"></textarea>
+          <textarea id="input-impression" rows="4" required placeholder="พิมพ์ความประทับใจ หรือข้อความที่อยากบอกพวกเรา..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 focus:border-pink-500 focus:outline-none text-white"></textarea>
         </div>
 
         <button type="submit" id="submit-btn" class="w-full py-3 bg-gradient-to-r from-pink-500 to-sky-500 font-semibold rounded-lg shadow-lg hover:opacity-90 transition">
@@ -95,15 +102,23 @@
       </form>
     </section>
 
+    <!-- Screen 3: Floating IG Wall -->
     <section id="view-wall" class="hidden relative min-h-[80vh]">
       <div id="wall-container" class="relative w-full h-[78vh] border border-white/10 rounded-2xl bg-black/20 backdrop-blur-sm overflow-hidden p-6">
-        </div>
+        <!-- Dynamic Floating Cards -->
+      </div>
     </section>
 
+    <!-- Screen 1: Admin Dashboard (Protected) -->
     <section id="view-admin" class="hidden">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-sky-400">ระบบจัดการผู้ดูแลระบบ (Admin Dashboard)</h2>
-        <span class="text-xs bg-red-500/20 text-red-300 px-3 py-1 rounded-full border border-red-500/30">Admin Mode</span>
+        <div class="flex gap-2 items-center">
+          <button onclick="exportToCSV()" class="px-3 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 font-semibold rounded-lg shadow transition flex items-center gap-1">
+            📊 Export CSV
+          </button>
+          <span class="text-xs bg-red-500/20 text-red-300 px-3 py-1 rounded-full border border-red-500/30">Admin Mode</span>
+        </div>
       </div>
 
       <div class="bg-slate-800/90 backdrop-blur-md rounded-xl border border-slate-700 overflow-x-auto">
@@ -119,13 +134,15 @@
             </tr>
           </thead>
           <tbody id="admin-table-body" class="divide-y divide-slate-700">
-            </tbody>
+            <!-- Dynamic Rows -->
+          </tbody>
         </table>
       </div>
     </section>
 
   </div>
 
+  <!-- Detail Modal -->
   <div id="card-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden z-50 flex items-center justify-center p-4" onclick="closeModal()">
     <div class="bg-slate-800 border border-slate-700 max-w-md w-full rounded-2xl overflow-hidden shadow-2xl relative" onclick="event.stopPropagation()">
       <button onclick="closeModal()" class="absolute top-3 right-3 text-white bg-black/50 hover:bg-black/80 rounded-full w-8 h-8 flex items-center justify-center">✕</button>
@@ -140,6 +157,7 @@
     </div>
   </div>
 
+  <!-- Edit Modal (Admin) -->
   <div id="edit-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
     <div class="bg-slate-800 border border-slate-700 max-w-md w-full p-6 rounded-2xl shadow-2xl">
       <h3 class="text-lg font-bold text-white mb-4">แก้ไขข้อมูล</h3>
@@ -175,12 +193,16 @@
     let allMemories = [];
     let isAdmin = false;
 
-    // --- Init Supabase Client Safely ---
+    // --- Safe Init Supabase ---
     function initSupabase() {
-      if (window.supabase) {
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      } else {
-        console.error("Supabase SDK not loaded yet.");
+      try {
+        if (window.supabase && SUPABASE_URL && !SUPABASE_URL.includes("วาง_PROJECT_URL")) {
+          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } else {
+          console.warn("Supabase URL หรือ Key ยังไม่ได้ถูกตั้งค่าให้ถูกต้อง");
+        }
+      } catch (err) {
+        console.error("Supabase Initialization Failed:", err);
       }
     }
 
@@ -205,13 +227,11 @@
       checkAdminStatus();
       let hash = window.location.hash.replace('#', '');
 
-      // Default Page: เด้งไปหน้ากรอกข้อมูลก่อนเสมอ
       if (!hash) {
-        window.location.hash = 'upload';
+        switchTab('upload');
         return;
       }
 
-      // ป้องกันไม่ให้ผู้ใช้ทั่วไปเข้าหน้า #admin
       if (hash === 'admin' && !isAdmin) {
         alert('สำหรับผู้ดูแลระบบเท่านั้น');
         window.location.hash = 'upload';
@@ -307,7 +327,7 @@
     async function handleFormSubmit(e) {
       e.preventDefault();
       if (!supabaseClient) {
-        alert('ระบบยังไม่พร้อมเชื่อมต่อ Supabase');
+        alert('กรุณาใส่ค่า SUPABASE_URL และ SUPABASE_KEY ในไฟล์ index.html ก่อนใช้งาน');
         return;
       }
 
@@ -343,7 +363,16 @@
 
         if (dbErr) throw dbErr;
 
-        alert('บันทึกความทรงจำเรียบร้อยแล้ว!');
+        // Trigger Confetti Effect 🎉
+        if (window.confetti) {
+          confetti({
+            particleCount: 120,
+            spread: 80,
+            origin: { y: 0.6 }
+          });
+        }
+
+        alert('บันทึกความทรงจำเรียบร้อยแล้ว! 💖');
         document.getElementById('upload-form').reset();
         await fetchMemories();
         window.location.hash = 'wall';
@@ -422,6 +451,33 @@
         await fetchMemories();
         renderAdminTable();
       }
+    }
+
+    function exportToCSV() {
+      if (!allMemories || allMemories.length === 0) {
+        alert('ไม่มีข้อมูลสำหรับส่งออก');
+        return;
+      }
+
+      const headers = ['ID', 'ชื่อ-นามสกุล', 'สถานะ', 'ความรู้สึก', 'URL รูปภาพ', 'วันที่'];
+      const rows = allMemories.map(item => [
+        `"${item.id}"`,
+        `"${(item.name || '').replace(/"/g, '""')}"`,
+        `"${(item.role || '').replace(/"/g, '""')}"`,
+        `"${(item.impression || '').replace(/"/g, '""')}"`,
+        `"${item.image_url}"`,
+        `"${new Date(item.created_at).toLocaleString('th-TH')}"`
+      ]);
+
+      const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `samanmitr_m304_memories_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     }
 
     function changeBackground(e) {
