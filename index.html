@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>งานสมานมิตร 69' M.304 - ความทรงจำ</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- โหลด Supabase JS Bundle (รองรับ UMD Global Object) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <style>
     @keyframes float {
       0% { transform: translate(0, 0) rotate(0deg); }
@@ -28,7 +28,6 @@
 </head>
 <body id="bg-container" class="bg-slate-900 text-white min-h-screen relative overflow-x-hidden bg-cover bg-center transition-all duration-500">
 
-  <!-- Config Supabase -->
   <script>
     const SUPABASE_URL = "วาง_PROJECT_URL_ตรงนี้";
     const SUPABASE_KEY = "วาง_ANON_KEY_ตรงนี้";
@@ -37,13 +36,11 @@
     let supabaseClient = null;
   </script>
 
-  <!-- Navbar / Header -->
   <header class="fixed top-0 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 px-6 py-4 flex justify-between items-center">
     <h1 class="text-xl font-bold bg-gradient-to-r from-pink-400 to-sky-300 bg-clip-text text-transparent">
       งานสมานมิตร 69' M.304
     </h1>
     <div class="flex gap-2 items-center">
-      <!-- Nav Tabs with separate URLs -->
       <a href="#upload" id="nav-upload" class="px-4 py-2 text-sm rounded-lg bg-pink-600 hover:bg-pink-500 font-semibold shadow-lg shadow-pink-500/30 transition">
         ➕ กรอกข้อมูล
       </a>
@@ -54,7 +51,6 @@
         ⚙️ Admin Dashboard
       </a>
 
-      <!-- Background Button (Admin Only) -->
       <label id="bg-uploader-btn" class="hidden px-3 py-2 text-sm rounded-lg bg-slate-800 border border-white/20 hover:bg-slate-700 cursor-pointer">
         🎨 ฉากหลัง
         <input type="file" id="bg-uploader" class="hidden" accept="image/*" onchange="changeBackground(event)">
@@ -64,7 +60,6 @@
 
   <div class="pt-24 pb-12 px-4 max-w-7xl mx-auto min-h-screen">
 
-    <!-- Screen 2: Form Upload (Default Entry) -->
     <section id="view-upload" class="hidden max-w-lg mx-auto bg-slate-800/80 backdrop-blur-md p-8 rounded-2xl border border-white/10 shadow-2xl">
       <h2 class="text-2xl font-bold text-pink-400 mb-6 text-center">ฝากความทรงจำถึงห้อง ม.304</h2>
       
@@ -101,14 +96,11 @@
       </form>
     </section>
 
-    <!-- Screen 3: Floating IG Wall -->
     <section id="view-wall" class="hidden relative min-h-[80vh]">
       <div id="wall-container" class="relative w-full h-[78vh] border border-white/10 rounded-2xl bg-black/20 backdrop-blur-sm overflow-hidden p-6">
-        <!-- Dynamic Floating Cards -->
-      </div>
+        </div>
     </section>
 
-    <!-- Screen 1: Admin Dashboard (Protected) -->
     <section id="view-admin" class="hidden">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-sky-400">ระบบจัดการผู้ดูแลระบบ (Admin Dashboard)</h2>
@@ -133,15 +125,13 @@
             </tr>
           </thead>
           <tbody id="admin-table-body" class="divide-y divide-slate-700">
-            <!-- Dynamic Rows -->
-          </tbody>
+            </tbody>
         </table>
       </div>
     </section>
 
   </div>
 
-  <!-- Detail Modal -->
   <div id="card-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden z-50 flex items-center justify-center p-4" onclick="closeModal()">
     <div class="bg-slate-800 border border-slate-700 max-w-md w-full rounded-2xl overflow-hidden shadow-2xl relative" onclick="event.stopPropagation()">
       <button onclick="closeModal()" class="absolute top-3 right-3 text-white bg-black/50 hover:bg-black/80 rounded-full w-8 h-8 flex items-center justify-center">✕</button>
@@ -156,7 +146,6 @@
     </div>
   </div>
 
-  <!-- Edit Modal (Admin) -->
   <div id="edit-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
     <div class="bg-slate-800 border border-slate-700 max-w-md w-full p-6 rounded-2xl shadow-2xl">
       <h3 class="text-lg font-bold text-white mb-4">แก้ไขข้อมูล</h3>
@@ -192,7 +181,6 @@
     let allMemories = [];
     let isAdmin = false;
 
-    // --- Init Supabase Client Safely ---
     function initSupabase() {
       if (window.supabase) {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -201,7 +189,6 @@
       }
     }
 
-    // --- Check Admin & URL Router ---
     function checkAdminStatus() {
       const urlParams = new URLSearchParams(window.location.search);
       isAdmin = (urlParams.get('admin') === SECRET_ADMIN_KEY);
@@ -222,13 +209,11 @@
       checkAdminStatus();
       let hash = window.location.hash.replace('#', '');
 
-      // Default Page: เด้งไปหน้ากรอกข้อมูลก่อนเสมอ
       if (!hash) {
         window.location.hash = 'upload';
         return;
       }
 
-      // ป้องกันไม่ให้ผู้ใช้ทั่วไปเข้าหน้า #admin
       if (hash === 'admin' && !isAdmin) {
         alert('สำหรับผู้ดูแลระบบเท่านั้น');
         window.location.hash = 'upload';
@@ -360,7 +345,16 @@
 
         if (dbErr) throw dbErr;
 
-        alert('บันทึกความทรงจำเรียบร้อยแล้ว!');
+        // Trigger Confetti Effect 🎉
+        if (window.confetti) {
+          confetti({
+            particleCount: 120,
+            spread: 80,
+            origin: { y: 0.6 }
+          });
+        }
+
+        alert('บันทึกความทรงจำเรียบร้อยแล้ว! 💖');
         document.getElementById('upload-form').reset();
         await fetchMemories();
         window.location.hash = 'wall';
