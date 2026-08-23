@@ -6,7 +6,6 @@
   <title>งานสมานมิตร 69' M.304 - ความทรงจำ</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <style>
     @keyframes float {
       0% { transform: translate(0, 0) rotate(0deg); }
@@ -104,12 +103,7 @@
     <section id="view-admin" class="hidden">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-sky-400">ระบบจัดการผู้ดูแลระบบ (Admin Dashboard)</h2>
-        <div class="flex gap-2 items-center">
-          <button onclick="exportToCSV()" class="px-3 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 font-semibold rounded-lg shadow transition flex items-center gap-1">
-            📊 Export CSV
-          </button>
-          <span class="text-xs bg-red-500/20 text-red-300 px-3 py-1 rounded-full border border-red-500/30">Admin Mode</span>
-        </div>
+        <span class="text-xs bg-red-500/20 text-red-300 px-3 py-1 rounded-full border border-red-500/30">Admin Mode</span>
       </div>
 
       <div class="bg-slate-800/90 backdrop-blur-md rounded-xl border border-slate-700 overflow-x-auto">
@@ -181,6 +175,7 @@
     let allMemories = [];
     let isAdmin = false;
 
+    // --- Init Supabase Client Safely ---
     function initSupabase() {
       if (window.supabase) {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -189,6 +184,7 @@
       }
     }
 
+    // --- Check Admin & URL Router ---
     function checkAdminStatus() {
       const urlParams = new URLSearchParams(window.location.search);
       isAdmin = (urlParams.get('admin') === SECRET_ADMIN_KEY);
@@ -209,11 +205,13 @@
       checkAdminStatus();
       let hash = window.location.hash.replace('#', '');
 
+      // Default Page: เด้งไปหน้ากรอกข้อมูลก่อนเสมอ
       if (!hash) {
         window.location.hash = 'upload';
         return;
       }
 
+      // ป้องกันไม่ให้ผู้ใช้ทั่วไปเข้าหน้า #admin
       if (hash === 'admin' && !isAdmin) {
         alert('สำหรับผู้ดูแลระบบเท่านั้น');
         window.location.hash = 'upload';
@@ -345,16 +343,7 @@
 
         if (dbErr) throw dbErr;
 
-        // Trigger Confetti Effect 🎉
-        if (window.confetti) {
-          confetti({
-            particleCount: 120,
-            spread: 80,
-            origin: { y: 0.6 }
-          });
-        }
-
-        alert('บันทึกความทรงจำเรียบร้อยแล้ว! 💖');
+        alert('บันทึกความทรงจำเรียบร้อยแล้ว!');
         document.getElementById('upload-form').reset();
         await fetchMemories();
         window.location.hash = 'wall';
@@ -433,33 +422,6 @@
         await fetchMemories();
         renderAdminTable();
       }
-    }
-
-    function exportToCSV() {
-      if (!allMemories || allMemories.length === 0) {
-        alert('ไม่มีข้อมูลสำหรับส่งออก');
-        return;
-      }
-
-      const headers = ['ID', 'ชื่อ-นามสกุล', 'สถานะ', 'ความรู้สึก', 'URL รูปภาพ', 'วันที่'];
-      const rows = allMemories.map(item => [
-        `"${item.id}"`,
-        `"${(item.name || '').replace(/"/g, '""')}"`,
-        `"${(item.role || '').replace(/"/g, '""')}"`,
-        `"${(item.impression || '').replace(/"/g, '""')}"`,
-        `"${item.image_url}"`,
-        `"${new Date(item.created_at).toLocaleString('th-TH')}"`
-      ]);
-
-      const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `samanmitr_m304_memories_${new Date().toISOString().slice(0,10)}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
     }
 
     function changeBackground(e) {
