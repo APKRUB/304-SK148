@@ -41,14 +41,20 @@
     <h1 class="text-xl font-bold bg-gradient-to-r from-pink-400 to-sky-300 bg-clip-text text-transparent">
       งานสมานมิตร 69' M.304
     </h1>
-    <div class="flex gap-2">
-      <button onclick="switchTab('wall')" class="px-4 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition">
+    <div class="flex gap-2 items-center">
+      <!-- Nav Tabs with separate URLs -->
+      <a href="#upload" id="nav-upload" class="px-4 py-2 text-sm rounded-lg bg-pink-600 hover:bg-pink-500 font-semibold shadow-lg shadow-pink-500/30 transition">
+        ➕ กรอกข้อมูล
+      </a>
+      <a href="#wall" id="nav-wall" class="px-4 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition">
         🖼️ Floating Wall
-      </button>
-      <button onclick="switchTab('upload')" class="px-4 py-2 text-sm rounded-lg bg-pink-600 hover:bg-pink-500 font-semibold shadow-lg shadow-pink-500/30 transition">
-        ➕ อัปโหลดรูปภาพ
-      </button>
-      <label class="px-3 py-2 text-sm rounded-lg bg-slate-800 border border-white/20 hover:bg-slate-700 cursor-pointer">
+      </a>
+      <a href="#admin" id="nav-admin" class="hidden px-4 py-2 text-sm rounded-lg bg-red-600/80 hover:bg-red-500 font-semibold border border-red-400 transition">
+        ⚙️ Admin Dashboard
+      </a>
+
+      <!-- Background Button (Admin Only) -->
+      <label id="bg-uploader-btn" class="hidden px-3 py-2 text-sm rounded-lg bg-slate-800 border border-white/20 hover:bg-slate-700 cursor-pointer">
         🎨 ฉากหลัง
         <input type="file" id="bg-uploader" class="hidden" accept="image/*" onchange="changeBackground(event)">
       </label>
@@ -57,14 +63,7 @@
 
   <div class="pt-24 pb-12 px-4 max-w-7xl mx-auto min-h-screen">
 
-    <!-- Screen 3: Floating IG Wall (Default) -->
-    <section id="view-wall" class="relative min-h-[80vh]">
-      <div id="wall-container" class="relative w-full h-[78vh] border border-white/10 rounded-2xl bg-black/20 backdrop-blur-sm overflow-hidden p-6">
-        <!-- Floating Cards จะแสดงตรงนี้ -->
-      </div>
-    </section>
-
-    <!-- Screen 2: Form Upload -->
+    <!-- Screen 2: Form Upload (Default Entry) -->
     <section id="view-upload" class="hidden max-w-lg mx-auto bg-slate-800/80 backdrop-blur-md p-8 rounded-2xl border border-white/10 shadow-2xl">
       <h2 class="text-2xl font-bold text-pink-400 mb-6 text-center">ฝากความทรงจำถึงห้อง ม.304</h2>
       
@@ -101,7 +100,14 @@
       </form>
     </section>
 
-    <!-- Screen 1: Admin Dashboard -->
+    <!-- Screen 3: Floating IG Wall -->
+    <section id="view-wall" class="hidden relative min-h-[80vh]">
+      <div id="wall-container" class="relative w-full h-[78vh] border border-white/10 rounded-2xl bg-black/20 backdrop-blur-sm overflow-hidden p-6">
+        <!-- Dynamic Floating Cards -->
+      </div>
+    </section>
+
+    <!-- Screen 1: Admin Dashboard (Protected) -->
     <section id="view-admin" class="hidden">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-sky-400">ระบบจัดการผู้ดูแลระบบ (Admin Dashboard)</h2>
@@ -121,7 +127,7 @@
             </tr>
           </thead>
           <tbody id="admin-table-body" class="divide-y divide-slate-700">
-            <!-- ข้อมูลจะถูกนำมาใส่ตรงนี้ -->
+            <!-- Dynamic Rows -->
           </tbody>
         </table>
       </div>
@@ -178,37 +184,71 @@
 
   <script>
     let allMemories = [];
+    let isAdmin = false;
+
+    // --- Check Admin & URL Router ---
+    function checkAdminStatus() {
+      const urlParams = new URLSearchParams(window.location.search);
+      isAdmin = (urlParams.get('admin') === SECRET_ADMIN_KEY);
+
+      const bgBtn = document.getElementById('bg-uploader-btn');
+      const adminNav = document.getElementById('nav-admin');
+
+      if (isAdmin) {
+        bgBtn.classList.remove('hidden');
+        adminNav.classList.remove('hidden');
+      } else {
+        bgBtn.classList.add('hidden');
+        adminNav.classList.add('hidden');
+      }
+    }
+
+    function handleRoute() {
+      checkAdminStatus();
+      let hash = window.location.hash.replace('#', '');
+
+      // Default Page: Jump directly to Upload Form
+      if (!hash) {
+        window.location.hash = 'upload';
+        return;
+      }
+
+      // Block non-admin from entering #admin view
+      if (hash === 'admin' && !isAdmin) {
+        alert('สำหรับผู้ดูแลระบบเท่านั้น');
+        window.location.hash = 'upload';
+        return;
+      }
+
+      switchTab(hash);
+    }
 
     function switchTab(tab) {
-      document.getElementById('view-wall').classList.add('hidden');
       document.getElementById('view-upload').classList.add('hidden');
+      document.getElementById('view-wall').classList.add('hidden');
       document.getElementById('view-admin').classList.add('hidden');
 
       if (tab === 'wall') {
         document.getElementById('view-wall').classList.remove('hidden');
         renderFloatingWall();
-      } else if (tab === 'upload') {
-        document.getElementById('view-upload').classList.remove('hidden');
-      } else if (tab === 'admin') {
+      } else if (tab === 'admin' && isAdmin) {
         document.getElementById('view-admin').classList.remove('hidden');
         renderAdminTable();
+      } else {
+        document.getElementById('view-upload').classList.remove('hidden');
       }
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('admin') === SECRET_ADMIN_KEY) {
-        switchTab('admin');
-      } else {
-        switchTab('wall');
-      }
+    window.addEventListener('hashchange', handleRoute);
 
+    window.addEventListener('DOMContentLoaded', () => {
       const savedBg = localStorage.getItem('m304_custom_bg');
       if (savedBg) {
         document.getElementById('bg-container').style.backgroundImage = `url('${savedBg}')`;
       }
 
       fetchMemories();
+      handleRoute();
     });
 
     async function fetchMemories() {
@@ -222,7 +262,8 @@
         return;
       }
       allMemories = data || [];
-      renderFloatingWall();
+      if (window.location.hash === '#wall') renderFloatingWall();
+      if (window.location.hash === '#admin' && isAdmin) renderAdminTable();
     }
 
     function renderFloatingWall() {
@@ -230,7 +271,7 @@
       container.innerHTML = '';
 
       if (allMemories.length === 0) {
-        container.innerHTML = `<div class="h-full flex items-center justify-center text-slate-400">ยังไม่มีความทรงจำอัปโหลด กดปุ่ม "อัปโหลดรูปภาพ" เพื่อเริ่มแชร์ได้เลย!</div>`;
+        container.innerHTML = `<div class="h-full flex items-center justify-center text-slate-400">ยังไม่มีความทรงจำอัปโหลด กดปุ่ม "กรอกข้อมูล" เพื่อเริ่มแชร์ได้เลย!</div>`;
         return;
       }
 
@@ -296,7 +337,7 @@
         alert('บันทึกความทรงจำเรียบร้อยแล้ว!');
         document.getElementById('upload-form').reset();
         await fetchMemories();
-        switchTab('wall');
+        window.location.hash = 'wall';
 
       } catch (err) {
         alert('เกิดข้อผิดพลาด: ' + err.message);
@@ -375,6 +416,7 @@
     }
 
     function changeBackground(e) {
+      if (!isAdmin) return;
       const file = e.target.files[0];
       if (file) {
         const reader = new FileReader();
