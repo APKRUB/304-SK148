@@ -9,24 +9,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <!-- Canvas Confetti Library -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-  <style>
-    @keyframes float {
-      0% { transform: translate(0, 0) rotate(0deg); }
-      25% { transform: translate(15px, -25px) rotate(3deg); }
-      50% { transform: translate(-10px, -45px) rotate(-3deg); }
-      75% { transform: translate(-25px, -20px) rotate(2deg); }
-      100% { transform: translate(0, 0) rotate(0deg); }
-    }
-    .floating-card {
-      animation: float var(--speed, 12s) ease-in-out infinite alternate;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .floating-card:hover {
-      animation-play-state: paused;
-      transform: scale(1.15);
-      z-index: 50;
-    }
-  </style>
 </head>
 <body id="bg-container" class="bg-slate-900 text-white min-h-screen relative overflow-x-hidden bg-cover bg-center transition-all duration-500">
 
@@ -37,6 +19,8 @@
     const SECRET_ADMIN_KEY = "m304admin"; // รหัสผ่านสำหรับ URL ลับ เช่น ?admin=m304admin
 
     let supabaseClient = null;
+    let physicsCards = [];
+    let physicsLoopId = null;
   </script>
 
   <!-- Navbar / Header -->
@@ -111,10 +95,10 @@
       </form>
     </section>
 
-    <!-- Screen 3: Floating IG Wall -->
+    <!-- Screen 3: Floating IG Wall (Physics Enabled) -->
     <section id="view-wall" class="hidden relative min-h-[80vh]">
-      <div id="wall-container" class="relative w-full h-[78vh] border border-white/10 rounded-2xl bg-black/20 backdrop-blur-sm overflow-hidden p-6">
-        <!-- Dynamic Floating Cards -->
+      <div id="wall-container" class="relative w-full h-[78vh] border border-white/10 rounded-2xl bg-black/20 backdrop-blur-sm overflow-hidden p-6 touch-none select-none">
+        <!-- Dynamic Floating Physics Cards -->
       </div>
     </section>
 
@@ -271,9 +255,11 @@
         renderFloatingWall();
       } else if (tab === 'admin' && isAdmin) {
         document.getElementById('view-admin').classList.remove('hidden');
+        if (physicsLoopId) cancelAnimationFrame(physicsLoopId);
         renderAdminTable();
       } else {
         document.getElementById('view-upload').classList.remove('hidden');
+        if (physicsLoopId) cancelAnimationFrame(physicsLoopId);
       }
     }
 
@@ -310,42 +296,197 @@
       if (window.location.hash === '#admin' && isAdmin) renderAdminTable();
     }
 
+    /* --- JS Physics Engine for Cards --- */
     function renderFloatingWall() {
       const container = document.getElementById('wall-container');
       container.innerHTML = '';
+      
+      if (physicsLoopId) cancelAnimationFrame(physicsLoopId);
+      physicsCards = [];
 
       if (allMemories.length === 0) {
         container.innerHTML = `<div class="h-full flex items-center justify-center text-slate-400">ยังไม่มีความทรงจำอัปโหลด กดปุ่ม "กรอกข้อมูล" เพื่อเริ่มแชร์ได้เลย!</div>`;
         return;
       }
 
+      const containerRect = container.getBoundingClientRect();
+
       allMemories.forEach((item) => {
         const card = document.createElement('div');
-        card.className = 'floating-card absolute cursor-pointer bg-slate-800/90 p-2.5 rounded-xl border border-white/20 shadow-xl transition-all w-36 sm:w-44';
         
-        const left = Math.floor(Math.random() * 75) + 5;
-        const top = Math.floor(Math.random() * 65) + 5;
-        const speed = (Math.random() * 8 + 8).toFixed(1);
+        // Removed CSS float, added grab/grabbing cursor and pointer event protections
+        card.className = 'absolute cursor-grab active:cursor-grabbing bg-slate-800/90 p-2.5 rounded-xl border border-white/20 shadow-xl w-36 sm:w-44 touch-none z-10 will-change-transform';
 
-        card.style.left = `${left}%`;
-        card.style.top = `${top}%`;
-        card.style.setProperty('--speed', `${speed}s`);
-
-        // เช็กสไตล์รูปภาพ (contain หรือ cover)
         const fitClass = (item.fit_mode === 'cover') ? 'object-cover' : 'object-contain bg-black/50';
 
+        // Add pointer-events-none to children so dragging isn't interrupted by hovering text/images
         card.innerHTML = `
-          <div class="relative overflow-hidden rounded-lg aspect-square mb-2 bg-slate-900 flex items-center justify-center">
-            <img src="${item.image_url}" class="w-full h-full ${fitClass}">
+          <div class="relative overflow-hidden rounded-lg aspect-square mb-2 bg-slate-900 flex items-center justify-center pointer-events-none">
+            <img src="${item.image_url}" class="w-full h-full ${fitClass} pointer-events-none" draggable="false">
           </div>
-          <p class="text-xs font-bold truncate text-white">${item.name}</p>
-          <span class="text-[10px] text-pink-300 bg-pink-500/20 px-1.5 py-0.5 rounded border border-pink-500/30">${item.role}</span>
+          <p class="text-xs font-bold truncate text-white pointer-events-none">${item.name}</p>
+          <span class="text-[10px] text-pink-300 bg-pink-500/20 px-1.5 py-0.5 rounded border border-pink-500/30 pointer-events-none">${item.role}</span>
         `;
 
-        card.onclick = () => openModal(item);
         container.appendChild(card);
+
+        // Safe initial random spawn position inside boundaries
+        const maxLeft = Math.max(0, containerRect.width - card.offsetWidth);
+        const maxTop = Math.max(0, containerRect.height - card.offsetHeight);
+        
+        let x = Math.random() * maxLeft;
+        let y = Math.random() * maxTop;
+
+        card.style.left = '0px';
+        card.style.top = '0px';
+        card.style.transform = `translate(${x}px, ${y}px)`;
+
+        // Physics State Object
+        const cardData = {
+          el: card,
+          item: item,
+          x: x,
+          y: y,
+          vx: (Math.random() - 0.5) * 1.5, // Initial drifting velocity X
+          vy: (Math.random() - 0.5) * 1.5, // Initial drifting velocity Y
+          isDragging: false,
+          isClick: true,
+          dragOffsetX: 0,
+          dragOffsetY: 0,
+          lastTime: performance.now()
+        };
+
+        physicsCards.push(cardData);
+
+        // --- Drag Events Setup ---
+        card.addEventListener('pointerdown', (e) => {
+          if (e.button !== 0 && e.type !== 'touchstart') return; // Left click or touch only
+          cardData.isDragging = true;
+          cardData.isClick = true; // Assume it's a click until moved
+          
+          const rect = card.getBoundingClientRect();
+          cardData.dragOffsetX = e.clientX - rect.left;
+          cardData.dragOffsetY = e.clientY - rect.top;
+          
+          // Reset velocity while holding
+          cardData.vx = 0;
+          cardData.vy = 0;
+          cardData.lastTime = performance.now();
+          
+          // Visual Pop effect when picked up
+          card.style.zIndex = 50;
+          card.style.transition = 'transform 0.05s linear, box-shadow 0.2s';
+          card.classList.add('shadow-pink-500/50');
+          card.setPointerCapture(e.pointerId);
+        });
+
+        card.addEventListener('pointermove', (e) => {
+          if (!cardData.isDragging) return;
+          
+          const contRect = container.getBoundingClientRect();
+          const newX = e.clientX - contRect.left - cardData.dragOffsetX;
+          const newY = e.clientY - contRect.top - cardData.dragOffsetY;
+          
+          // If moved more than 5px, it's a drag, not a click
+          if (Math.abs(newX - cardData.x) > 5 || Math.abs(newY - cardData.y) > 5) {
+            cardData.isClick = false;
+          }
+
+          // Calculate Throw Velocity
+          const now = performance.now();
+          const dt = Math.max(1, now - cardData.lastTime);
+          
+          cardData.vx = ((newX - cardData.x) / dt) * 12; // Velocity multiplier
+          cardData.vy = ((newY - cardData.y) / dt) * 12;
+          
+          cardData.x = newX;
+          cardData.y = newY;
+          cardData.lastTime = now;
+          
+          card.style.transform = `translate(${cardData.x}px, ${cardData.y}px)`;
+        });
+
+        const releaseCard = (e) => {
+          if (!cardData.isDragging) return;
+          cardData.isDragging = false;
+          card.style.zIndex = 10;
+          card.style.transition = ''; // Return transform control to physics loop
+          card.classList.remove('shadow-pink-500/50');
+          card.releasePointerCapture(e.pointerId);
+          
+          if (cardData.isClick) {
+            openModal(item);
+          }
+        };
+
+        card.addEventListener('pointerup', releaseCard);
+        card.addEventListener('pointercancel', releaseCard);
       });
+
+      // Start the game loop
+      physicsLoopId = requestAnimationFrame(updatePhysics);
     }
+
+    function updatePhysics() {
+      const container = document.getElementById('wall-container');
+      if (!container) return;
+      
+      const contRect = container.getBoundingClientRect();
+      
+      // Physics Constants
+      const bounceDamping = 0.6; // Speed retained after hitting a wall (60%)
+      const friction = 0.97; // Slows down over time in empty space
+      const floatForce = 0.08; // Tiny random nudge to keep them floating
+
+      physicsCards.forEach(cardData => {
+        if (cardData.isDragging) return;
+
+        const el = cardData.el;
+        const width = el.offsetWidth;
+        const height = el.offsetHeight;
+        const maxLeft = Math.max(0, contRect.width - width);
+        const maxTop = Math.max(0, contRect.height - height);
+
+        // 1. Apply Empty Space Friction (Slow down gracefully)
+        cardData.vx *= friction;
+        cardData.vy *= friction;
+
+        // 2. Continuous Idle Float (If moving extremely slow, nudge it gently)
+        if (Math.abs(cardData.vx) < 0.2 && Math.abs(cardData.vy) < 0.2) {
+          cardData.vx += (Math.random() - 0.5) * floatForce;
+          cardData.vy += (Math.random() - 0.5) * floatForce;
+        }
+
+        // 3. Move the card
+        cardData.x += cardData.vx;
+        cardData.y += cardData.vy;
+
+        // 4. Wall Collision Detection & Bouncing
+        if (cardData.x <= 0) {
+          cardData.x = 0;
+          cardData.vx *= -bounceDamping; // Reverse direction and lose energy
+        } else if (cardData.x >= maxLeft) {
+          cardData.x = maxLeft;
+          cardData.vx *= -bounceDamping;
+        }
+
+        if (cardData.y <= 0) {
+          cardData.y = 0;
+          cardData.vy *= -bounceDamping;
+        } else if (cardData.y >= maxTop) {
+          cardData.y = maxTop;
+          cardData.vy *= -bounceDamping;
+        }
+
+        // 5. Render Position
+        el.style.transform = `translate(${cardData.x}px, ${cardData.y}px)`;
+      });
+
+      // Loop to next frame
+      physicsLoopId = requestAnimationFrame(updatePhysics);
+    }
+    /* -------------------------------------- */
+
 
     async function handleFormSubmit(e) {
       e.preventDefault();
