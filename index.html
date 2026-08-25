@@ -14,36 +14,42 @@
 
   <!-- Config Supabase -->
   <script>
-    const SUPABASE_URL = "https://xgoohfiaefkfpdracfri.supabase.co/";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhnb29oZmlhZWZrZnBkcmFjZnJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc0OTI4MzEsImV4cCI6MjEwMzA2ODgzMX0.R7oDHuP3lHexqS9sNSwuFdjCuvHmBOS4qj3dYjcahPA";
+    const SUPABASE_URL = "วาง_PROJECT_URL_ตรงนี้";
+    const SUPABASE_KEY = "วาง_ANON_KEY_ตรงนี้";
     const SECRET_ADMIN_KEY = "m304admin"; // รหัสผ่านสำหรับ URL ลับ เช่น ?admin=m304admin
 
     let supabaseClient = null;
     let physicsCards = [];
     let physicsLoopId = null;
+    let currentLang = localStorage.getItem('m304_lang') || 'th';
   </script>
 
   <!-- Navbar / Header -->
   <header class="fixed top-0 left-0 right-0 z-40 bg-black/40 backdrop-blur-md border-b border-white/10 px-6 py-4 flex justify-between items-center">
-    <h1 class="text-xl font-bold bg-gradient-to-r from-pink-400 to-sky-300 bg-clip-text text-transparent">
+    <h1 class="text-xl font-bold bg-gradient-to-r from-pink-400 to-sky-300 bg-clip-text text-transparent" data-i18n="title">
       งานสมานมิตร 69' M.304
     </h1>
-    <div class="flex gap-2 items-center">
-      <a href="#upload" id="nav-upload" class="px-4 py-2 text-sm rounded-lg bg-pink-600 hover:bg-pink-500 font-semibold shadow-lg shadow-pink-500/30 transition">
+    <div class="flex gap-2 items-center flex-wrap justify-end">
+      <a href="#upload" id="nav-upload" class="px-4 py-2 text-sm rounded-lg bg-pink-600 hover:bg-pink-500 font-semibold shadow-lg shadow-pink-500/30 transition" data-i18n="navUpload">
         ➕ กรอกข้อมูล
       </a>
-      <a href="#wall" id="nav-wall" class="px-4 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition">
+      <a href="#wall" id="nav-wall" class="px-4 py-2 text-sm rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 transition" data-i18n="navWall">
         🖼️ Floating Wall
       </a>
-      <a href="#admin" id="nav-admin" class="hidden px-4 py-2 text-sm rounded-lg bg-red-600/80 hover:bg-red-500 font-semibold border border-red-400 transition">
+      <a href="#admin" id="nav-admin" class="hidden px-4 py-2 text-sm rounded-lg bg-red-600/80 hover:bg-red-500 font-semibold border border-red-400 transition" data-i18n="navAdmin">
         ⚙️ Admin Dashboard
       </a>
 
       <!-- Background Button (Admin Only) -->
       <label id="bg-uploader-btn" class="hidden px-3 py-2 text-sm rounded-lg bg-slate-800 border border-white/20 hover:bg-slate-700 cursor-pointer">
-        🎨 ฉากหลัง
+        <span data-i18n="btnBg">🎨 ฉากหลัง</span>
         <input type="file" id="bg-uploader" class="hidden" accept="image/*" onchange="changeBackground(event)">
       </label>
+
+      <!-- Language Toggle Button -->
+      <button id="lang-btn" onclick="toggleLang()" class="px-3 py-2 text-sm font-bold rounded-lg bg-slate-700 border border-white/20 hover:bg-slate-600 transition">
+        EN
+      </button>
     </div>
   </header>
 
@@ -51,45 +57,45 @@
 
     <!-- Screen 2: Form Upload (Default Entry) -->
     <section id="view-upload" class="max-w-lg mx-auto bg-slate-800/80 backdrop-blur-md p-8 rounded-2xl border border-white/10 shadow-2xl">
-      <h2 class="text-2xl font-bold text-pink-400 mb-6 text-center">ฝากความทรงจำถึงห้อง ม.304</h2>
+      <h2 class="text-2xl font-bold text-pink-400 mb-6 text-center" data-i18n="formTitle">ฝากความทรงจำถึงห้อง ม.304</h2>
       
       <form id="upload-form" class="space-y-4" onsubmit="handleFormSubmit(event)">
         <div>
-          <label class="block text-sm font-medium text-slate-300 mb-1">ชื่อ-นามสกุล / ชื่อเล่น</label>
-          <input type="text" id="input-name" required placeholder="เช่น พี่เอ็ม / ครูสร้อย" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 focus:border-pink-500 focus:outline-none text-white">
+          <label class="block text-sm font-medium text-slate-300 mb-1" data-i18n="labelName">ชื่อ-นามสกุล / ชื่อเล่น</label>
+          <input type="text" id="input-name" required data-i18n-placeholder="placeholderName" placeholder="เช่น พี่เอ็ม / ครูสร้อย" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 focus:border-pink-500 focus:outline-none text-white">
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-slate-300 mb-1">สถานะ</label>
+          <label class="block text-sm font-medium text-slate-300 mb-1" data-i18n="labelRole">สถานะ</label>
           <select id="input-role" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 focus:border-pink-500 focus:outline-none text-white">
-            <option value="นักเรียนปัจจุบัน">นักเรียนปัจจุบัน</option>
-            <option value="ครู">ครู</option>
-            <option value="บุคลากร">บุคลากร</option>
-            <option value="OSK">OSK</option>
-            <option value="อื่น ๆ">อื่น ๆ</option>
+            <option value="นักเรียนปัจจุบัน" data-i18n="roleStudent">นักเรียนปัจจุบัน</option>
+            <option value="ครู" data-i18n="roleTeacher">ครู</option>
+            <option value="บุคลากร" data-i18n="roleStaff">บุคลากร</option>
+            <option value="OSK" data-i18n="roleOSK">OSK</option>
+            <option value="อื่น ๆ" data-i18n="roleOther">อื่น ๆ</option>
           </select>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-slate-300 mb-1">รูปภาพความทรงจำ (1 ภาพ)</label>
+          <label class="block text-sm font-medium text-slate-300 mb-1" data-i18n="labelImage">รูปภาพความทรงจำ (1 ภาพ)</label>
           <input type="file" id="input-image" accept="image/*" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-pink-600 file:text-white hover:file:bg-pink-500">
         </div>
 
         <!-- ตัวเลือกกรอบรูป / สไตล์การตัดรูป -->
         <div>
-          <label class="block text-sm font-medium text-slate-300 mb-1">สไตล์การแสดงผลรูปภาพ</label>
+          <label class="block text-sm font-medium text-slate-300 mb-1" data-i18n="labelFit">สไตล์การแสดงผลรูปภาพ</label>
           <select id="input-fit" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 focus:border-pink-500 focus:outline-none text-white">
-            <option value="contain">🖼️ เห็นรูปเต็มใบ (ไม่โดนตัดขอบ - แนะนำสำหรับแนวตั้ง/แนวนอน)</option>
-            <option value="cover">✂️ สี่เหลี่ยมจัตุรัส (ครอบตัดพอดีกรอบสไตล์ IG)</option>
+            <option value="contain" data-i18n="fitContainDesc">🖼️ เห็นรูปเต็มใบ (ไม่โดนตัดขอบ - แนะนำสำหรับแนวตั้ง/แนวนอน)</option>
+            <option value="cover" data-i18n="fitCoverDesc">✂️ สี่เหลี่ยมจัตุรัส (ครอบตัดพอดีกรอบสไตล์ IG)</option>
           </select>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-slate-300 mb-1">ความรู้สึกที่มีต่อห้อง ม.304</label>
-          <textarea id="input-impression" rows="4" required placeholder="พิมพ์ความประทับใจ หรือข้อความที่อยากบอกพวกเรา..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 focus:border-pink-500 focus:outline-none text-white"></textarea>
+          <label class="block text-sm font-medium text-slate-300 mb-1" data-i18n="labelImpression">ความรู้สึกที่มีต่อห้อง ม.304</label>
+          <textarea id="input-impression" rows="4" required data-i18n-placeholder="placeholderImpression" placeholder="พิมพ์ความประทับใจ หรือข้อความที่อยากบอกพวกเรา..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 focus:border-pink-500 focus:outline-none text-white"></textarea>
         </div>
 
-        <button type="submit" id="submit-btn" class="w-full py-3 bg-gradient-to-r from-pink-500 to-sky-500 font-semibold rounded-lg shadow-lg hover:opacity-90 transition">
+        <button type="submit" id="submit-btn" class="w-full py-3 bg-gradient-to-r from-pink-500 to-sky-500 font-semibold rounded-lg shadow-lg hover:opacity-90 transition" data-i18n="btnSubmit">
           บันทึกความทรงจำ 💖
         </button>
       </form>
@@ -105,12 +111,12 @@
     <!-- Screen 1: Admin Dashboard (Protected) -->
     <section id="view-admin" class="hidden">
       <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-sky-400">ระบบจัดการผู้ดูแลระบบ (Admin Dashboard)</h2>
+        <h2 class="text-2xl font-bold text-sky-400" data-i18n="adminTitle">ระบบจัดการผู้ดูแลระบบ (Admin Dashboard)</h2>
         <div class="flex gap-2 items-center">
-          <button onclick="exportToCSV()" class="px-3 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 font-semibold rounded-lg shadow transition flex items-center gap-1">
+          <button onclick="exportToCSV()" class="px-3 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 font-semibold rounded-lg shadow transition flex items-center gap-1" data-i18n="btnExport">
             📊 Export CSV
           </button>
-          <span class="text-xs bg-red-500/20 text-red-300 px-3 py-1 rounded-full border border-red-500/30">Admin Mode</span>
+          <span class="text-xs bg-red-500/20 text-red-300 px-3 py-1 rounded-full border border-red-500/30" data-i18n="adminMode">Admin Mode</span>
         </div>
       </div>
 
@@ -118,13 +124,13 @@
         <table class="w-full text-left text-sm text-slate-300">
           <thead class="bg-slate-900/80 text-slate-400 border-b border-slate-700">
             <tr>
-              <th class="p-4">รูปภาพ</th>
-              <th class="p-4">ชื่อ</th>
-              <th class="p-4">สถานะ</th>
-              <th class="p-4">ความรู้สึก</th>
-              <th class="p-4">สไตล์รูป</th>
-              <th class="p-4">วันที่</th>
-              <th class="p-4 text-center">จัดการ</th>
+              <th class="p-4" data-i18n="thPhoto">รูปภาพ</th>
+              <th class="p-4" data-i18n="thName">ชื่อ</th>
+              <th class="p-4" data-i18n="thRole">สถานะ</th>
+              <th class="p-4" data-i18n="thImpression">ความรู้สึก</th>
+              <th class="p-4" data-i18n="thFit">สไตล์รูป</th>
+              <th class="p-4" data-i18n="thDate">วันที่</th>
+              <th class="p-4 text-center" data-i18n="thAction">จัดการ</th>
             </tr>
           </thead>
           <tbody id="admin-table-body" class="divide-y divide-slate-700">
@@ -159,37 +165,37 @@
   <!-- Edit Modal (Admin) -->
   <div id="edit-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden z-50 flex items-center justify-center p-4">
     <div class="bg-slate-800 border border-slate-700 max-w-md w-full p-6 rounded-2xl shadow-2xl">
-      <h3 class="text-lg font-bold text-white mb-4">แก้ไขข้อมูล</h3>
+      <h3 class="text-lg font-bold text-white mb-4" data-i18n="modalEditTitle">แก้ไขข้อมูล</h3>
       <input type="hidden" id="edit-id">
       <div class="space-y-3">
         <div>
-          <label class="text-xs text-slate-400">ชื่อ</label>
+          <label class="text-xs text-slate-400" data-i18n="thName">ชื่อ</label>
           <input type="text" id="edit-name" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white">
         </div>
         <div>
-          <label class="text-xs text-slate-400">สถานะ</label>
+          <label class="text-xs text-slate-400" data-i18n="thRole">สถานะ</label>
           <select id="edit-role" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white">
-            <option value="นักเรียนปัจจุบัน">นักเรียนปัจจุบัน</option>
-            <option value="ครู">ครู</option>
-            <option value="บุคลากร">บุคลากร</option>
-            <option value="OSK">OSK</option>
-            <option value="อื่น ๆ">อื่น ๆ</option>
+            <option value="นักเรียนปัจจุบัน" data-i18n="roleStudent">นักเรียนปัจจุบัน</option>
+            <option value="ครู" data-i18n="roleTeacher">ครู</option>
+            <option value="บุคลากร" data-i18n="roleStaff">บุคลากร</option>
+            <option value="OSK" data-i18n="roleOSK">OSK</option>
+            <option value="อื่น ๆ" data-i18n="roleOther">อื่น ๆ</option>
           </select>
         </div>
         <div>
-          <label class="text-xs text-slate-400">สไตล์การแสดงผลรูปภาพ</label>
+          <label class="text-xs text-slate-400" data-i18n="thFit">สไตล์การแสดงผลรูปภาพ</label>
           <select id="edit-fit" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white">
-            <option value="contain">🖼️ เห็นรูปเต็มใบ (Contain)</option>
-            <option value="cover">✂️ สี่เหลี่ยมจัตุรัส (Cover)</option>
+            <option value="contain" data-i18n="fitContain">🖼️ เห็นรูปเต็มใบ (Contain)</option>
+            <option value="cover" data-i18n="fitCover">✂️ สี่เหลี่ยมจัตุรัส (Cover)</option>
           </select>
         </div>
         <div>
-          <label class="text-xs text-slate-400">ความรู้สึก</label>
+          <label class="text-xs text-slate-400" data-i18n="thImpression">ความรู้สึก</label>
           <textarea id="edit-impression" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white"></textarea>
         </div>
         <div class="flex justify-end gap-2 pt-2">
-          <button onclick="closeEditModal()" class="px-4 py-2 bg-slate-700 text-sm rounded-lg">ยกเลิก</button>
-          <button onclick="saveEdit()" class="px-4 py-2 bg-pink-600 text-sm font-semibold rounded-lg">บันทึก</button>
+          <button onclick="closeEditModal()" class="px-4 py-2 bg-slate-700 text-sm rounded-lg" data-i18n="btnCancel">ยกเลิก</button>
+          <button onclick="saveEdit()" class="px-4 py-2 bg-pink-600 text-sm font-semibold rounded-lg" data-i18n="btnSave">บันทึก</button>
         </div>
       </div>
     </div>
@@ -199,6 +205,154 @@
     let allMemories = [];
     let isAdmin = false;
 
+    // --- i18n Dictionary ---
+    const i18n = {
+      th: {
+        title: "งานสมานมิตร 69' M.304",
+        navUpload: "➕ กรอกข้อมูล",
+        navWall: "🖼️ Floating Wall",
+        navAdmin: "⚙️ Admin Dashboard",
+        btnBg: "🎨 ฉากหลัง",
+        formTitle: "ฝากความทรงจำถึงห้อง ม.304",
+        labelName: "ชื่อ-นามสกุล / ชื่อเล่น",
+        placeholderName: "เช่น พี่เอ็ม / ครูสร้อย",
+        labelRole: "สถานะ",
+        roleStudent: "นักเรียนปัจจุบัน",
+        roleTeacher: "ครู",
+        roleStaff: "บุคลากร",
+        roleOSK: "OSK",
+        roleOther: "อื่น ๆ",
+        labelImage: "รูปภาพความทรงจำ (1 ภาพ)",
+        labelFit: "สไตล์การแสดงผลรูปภาพ",
+        fitContain: "🖼️ เห็นรูปเต็มใบ (Contain)",
+        fitCover: "✂️ สี่เหลี่ยมจัตุรัส (Cover)",
+        fitContainDesc: "🖼️ เห็นรูปเต็มใบ (ไม่โดนตัดขอบ - แนะนำสำหรับแนวตั้ง/แนวนอน)",
+        fitCoverDesc: "✂️ สี่เหลี่ยมจัตุรัส (ครอบตัดพอดีกรอบสไตล์ IG)",
+        labelImpression: "ความรู้สึกที่มีต่อห้อง ม.304",
+        placeholderImpression: "พิมพ์ความประทับใจ หรือข้อความที่อยากบอกพวกเรา...",
+        btnSubmit: "บันทึกความทรงจำ 💖",
+        btnSubmitting: "กำลังอัปโหลด...",
+        wallEmpty: "ยังไม่มีความทรงจำอัปโหลด กดปุ่ม \"กรอกข้อมูล\" เพื่อเริ่มแชร์ได้เลย!",
+        adminTitle: "ระบบจัดการผู้ดูแลระบบ (Admin Dashboard)",
+        btnExport: "📊 Export CSV",
+        adminMode: "Admin Mode",
+        thPhoto: "รูปภาพ",
+        thName: "ชื่อ",
+        thRole: "สถานะ",
+        thImpression: "ความรู้สึก",
+        thFit: "สไตล์รูป",
+        thDate: "วันที่",
+        thAction: "จัดการ",
+        btnEdit: "แก้ไข",
+        btnDelete: "ลบ",
+        modalEditTitle: "แก้ไขข้อมูล",
+        btnCancel: "ยกเลิก",
+        btnSave: "บันทึก",
+        alertNoSupabase: "กรุณาตั้งค่า SUPABASE_URL และ SUPABASE_KEY ในไฟล์ index.html ก่อนใช้งาน",
+        alertSuccess: "บันทึกความทรงจำเรียบร้อยแล้ว! 💖",
+        alertError: "เกิดข้อผิดพลาด: ",
+        confirmDelete: "ยืนยันว่าต้องการลบรายการนี้ใช่หรือไม่?",
+        alertAdminOnly: "สำหรับผู้ดูแลระบบเท่านั้น",
+        alertNoExport: "ไม่มีข้อมูลสำหรับส่งออก"
+      },
+      en: {
+        title: "Samanmitr 69' M.304",
+        navUpload: "➕ Add Memory",
+        navWall: "🖼️ Floating Wall",
+        navAdmin: "⚙️ Admin Dashboard",
+        btnBg: "🎨 Background",
+        formTitle: "Leave a Memory for M.304",
+        labelName: "Full Name / Nickname",
+        placeholderName: "e.g., John Doe",
+        labelRole: "Role",
+        roleStudent: "Current Student",
+        roleTeacher: "Teacher",
+        roleStaff: "Staff",
+        roleOSK: "OSK",
+        roleOther: "Other",
+        labelImage: "Memory Photo (1 image)",
+        labelFit: "Image Display Style",
+        fitContain: "🖼️ Full Image (Contain)",
+        fitCover: "✂️ Square (Cover)",
+        fitContainDesc: "🖼️ Full Image (Contain - Recommended for Portrait/Landscape)",
+        fitCoverDesc: "✂️ Square (Cover - IG Style)",
+        labelImpression: "Feelings about M.304",
+        placeholderImpression: "Share your impressions or a message to us...",
+        btnSubmit: "Save Memory 💖",
+        btnSubmitting: "Uploading...",
+        wallEmpty: "No memories uploaded yet. Click \"Add Memory\" to start sharing!",
+        adminTitle: "Admin Dashboard",
+        btnExport: "📊 Export CSV",
+        adminMode: "Admin Mode",
+        thPhoto: "Photo",
+        thName: "Name",
+        thRole: "Role",
+        thImpression: "Impression",
+        thFit: "Style",
+        thDate: "Date",
+        thAction: "Action",
+        btnEdit: "Edit",
+        btnDelete: "Delete",
+        modalEditTitle: "Edit Memory",
+        btnCancel: "Cancel",
+        btnSave: "Save",
+        alertNoSupabase: "Please set SUPABASE_URL and SUPABASE_KEY in index.html first.",
+        alertSuccess: "Memory saved successfully! 💖",
+        alertError: "Error: ",
+        confirmDelete: "Are you sure you want to delete this item?",
+        alertAdminOnly: "Administrators only.",
+        alertNoExport: "No data to export."
+      }
+    };
+
+    function applyLanguage() {
+      const texts = i18n[currentLang];
+      
+      // Update basic texts
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (texts[key]) el.innerHTML = texts[key];
+      });
+
+      // Update placeholders
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (texts[key]) el.placeholder = texts[key];
+      });
+
+      // Update button toggle text
+      document.getElementById('lang-btn').innerText = currentLang === 'th' ? 'EN' : 'TH';
+
+      // Re-render Dynamic Content
+      if (allMemories.length > 0) {
+        if (window.location.hash === '#wall') renderFloatingWall();
+        if (window.location.hash === '#admin' && isAdmin) renderAdminTable();
+      } else {
+        const container = document.getElementById('wall-container');
+        if (container && window.location.hash === '#wall') {
+          container.innerHTML = `<div class="h-full flex items-center justify-center text-slate-400">${texts.wallEmpty}</div>`;
+        }
+      }
+    }
+
+    function toggleLang() {
+      currentLang = currentLang === 'th' ? 'en' : 'th';
+      localStorage.setItem('m304_lang', currentLang);
+      applyLanguage();
+    }
+
+    function getRoleText(val) {
+      const map = {
+        'นักเรียนปัจจุบัน': 'roleStudent',
+        'ครู': 'roleTeacher',
+        'บุคลากร': 'roleStaff',
+        'OSK': 'roleOSK',
+        'อื่น ๆ': 'roleOther'
+      };
+      return i18n[currentLang][map[val]] || val;
+    }
+
+    // --- App Logic ---
     function initSupabase() {
       try {
         if (window.supabase && SUPABASE_URL && !SUPABASE_URL.includes("วาง_PROJECT_URL")) {
@@ -237,7 +391,7 @@
       }
 
       if (hash === 'admin' && !isAdmin) {
-        alert('สำหรับผู้ดูแลระบบเท่านั้น');
+        alert(i18n[currentLang].alertAdminOnly);
         window.location.hash = 'upload';
         return;
       }
@@ -267,6 +421,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       initSupabase();
+      applyLanguage(); // Apply user's saved language preference on load
 
       const savedBg = localStorage.getItem('m304_custom_bg');
       if (savedBg) {
@@ -305,7 +460,7 @@
       physicsCards = [];
 
       if (allMemories.length === 0) {
-        container.innerHTML = `<div class="h-full flex items-center justify-center text-slate-400">ยังไม่มีความทรงจำอัปโหลด กดปุ่ม "กรอกข้อมูล" เพื่อเริ่มแชร์ได้เลย!</div>`;
+        container.innerHTML = `<div class="h-full flex items-center justify-center text-slate-400">${i18n[currentLang].wallEmpty}</div>`;
         return;
       }
 
@@ -313,24 +468,21 @@
 
       allMemories.forEach((item) => {
         const card = document.createElement('div');
-        
-        // Removed CSS float, added grab/grabbing cursor and pointer event protections
         card.className = 'absolute cursor-grab active:cursor-grabbing bg-slate-800/90 p-2.5 rounded-xl border border-white/20 shadow-xl w-36 sm:w-44 touch-none z-10 will-change-transform';
 
         const fitClass = (item.fit_mode === 'cover') ? 'object-cover' : 'object-contain bg-black/50';
+        const translatedRole = getRoleText(item.role);
 
-        // Add pointer-events-none to children so dragging isn't interrupted by hovering text/images
         card.innerHTML = `
           <div class="relative overflow-hidden rounded-lg aspect-square mb-2 bg-slate-900 flex items-center justify-center pointer-events-none">
             <img src="${item.image_url}" class="w-full h-full ${fitClass} pointer-events-none" draggable="false">
           </div>
           <p class="text-xs font-bold truncate text-white pointer-events-none">${item.name}</p>
-          <span class="text-[10px] text-pink-300 bg-pink-500/20 px-1.5 py-0.5 rounded border border-pink-500/30 pointer-events-none">${item.role}</span>
+          <span class="text-[10px] text-pink-300 bg-pink-500/20 px-1.5 py-0.5 rounded border border-pink-500/30 pointer-events-none">${translatedRole}</span>
         `;
 
         container.appendChild(card);
 
-        // Safe initial random spawn position inside boundaries
         const maxLeft = Math.max(0, containerRect.width - card.offsetWidth);
         const maxTop = Math.max(0, containerRect.height - card.offsetHeight);
         
@@ -341,14 +493,13 @@
         card.style.top = '0px';
         card.style.transform = `translate(${x}px, ${y}px)`;
 
-        // Physics State Object
         const cardData = {
           el: card,
           item: item,
           x: x,
           y: y,
-          vx: (Math.random() - 0.5) * 1.5, // Initial drifting velocity X
-          vy: (Math.random() - 0.5) * 1.5, // Initial drifting velocity Y
+          vx: (Math.random() - 0.5) * 1.5,
+          vy: (Math.random() - 0.5) * 1.5,
           isDragging: false,
           isClick: true,
           dragOffsetX: 0,
@@ -358,22 +509,19 @@
 
         physicsCards.push(cardData);
 
-        // --- Drag Events Setup ---
         card.addEventListener('pointerdown', (e) => {
-          if (e.button !== 0 && e.type !== 'touchstart') return; // Left click or touch only
+          if (e.button !== 0 && e.type !== 'touchstart') return; 
           cardData.isDragging = true;
-          cardData.isClick = true; // Assume it's a click until moved
+          cardData.isClick = true; 
           
           const rect = card.getBoundingClientRect();
           cardData.dragOffsetX = e.clientX - rect.left;
           cardData.dragOffsetY = e.clientY - rect.top;
           
-          // Reset velocity while holding
           cardData.vx = 0;
           cardData.vy = 0;
           cardData.lastTime = performance.now();
           
-          // Visual Pop effect when picked up
           card.style.zIndex = 50;
           card.style.transition = 'transform 0.05s linear, box-shadow 0.2s';
           card.classList.add('shadow-pink-500/50');
@@ -387,16 +535,14 @@
           const newX = e.clientX - contRect.left - cardData.dragOffsetX;
           const newY = e.clientY - contRect.top - cardData.dragOffsetY;
           
-          // If moved more than 5px, it's a drag, not a click
           if (Math.abs(newX - cardData.x) > 5 || Math.abs(newY - cardData.y) > 5) {
             cardData.isClick = false;
           }
 
-          // Calculate Throw Velocity
           const now = performance.now();
           const dt = Math.max(1, now - cardData.lastTime);
           
-          cardData.vx = ((newX - cardData.x) / dt) * 12; // Velocity multiplier
+          cardData.vx = ((newX - cardData.x) / dt) * 12; 
           cardData.vy = ((newY - cardData.y) / dt) * 12;
           
           cardData.x = newX;
@@ -410,7 +556,7 @@
           if (!cardData.isDragging) return;
           cardData.isDragging = false;
           card.style.zIndex = 10;
-          card.style.transition = ''; // Return transform control to physics loop
+          card.style.transition = ''; 
           card.classList.remove('shadow-pink-500/50');
           card.releasePointerCapture(e.pointerId);
           
@@ -423,7 +569,6 @@
         card.addEventListener('pointercancel', releaseCard);
       });
 
-      // Start the game loop
       physicsLoopId = requestAnimationFrame(updatePhysics);
     }
 
@@ -432,11 +577,9 @@
       if (!container) return;
       
       const contRect = container.getBoundingClientRect();
-      
-      // Physics Constants
-      const bounceDamping = 0.6; // Speed retained after hitting a wall (60%)
-      const friction = 0.97; // Slows down over time in empty space
-      const floatForce = 0.08; // Tiny random nudge to keep them floating
+      const bounceDamping = 0.6; 
+      const friction = 0.97; 
+      const floatForce = 0.08; 
 
       physicsCards.forEach(cardData => {
         if (cardData.isDragging) return;
@@ -447,24 +590,20 @@
         const maxLeft = Math.max(0, contRect.width - width);
         const maxTop = Math.max(0, contRect.height - height);
 
-        // 1. Apply Empty Space Friction (Slow down gracefully)
         cardData.vx *= friction;
         cardData.vy *= friction;
 
-        // 2. Continuous Idle Float (If moving extremely slow, nudge it gently)
         if (Math.abs(cardData.vx) < 0.2 && Math.abs(cardData.vy) < 0.2) {
           cardData.vx += (Math.random() - 0.5) * floatForce;
           cardData.vy += (Math.random() - 0.5) * floatForce;
         }
 
-        // 3. Move the card
         cardData.x += cardData.vx;
         cardData.y += cardData.vy;
 
-        // 4. Wall Collision Detection & Bouncing
         if (cardData.x <= 0) {
           cardData.x = 0;
-          cardData.vx *= -bounceDamping; // Reverse direction and lose energy
+          cardData.vx *= -bounceDamping;
         } else if (cardData.x >= maxLeft) {
           cardData.x = maxLeft;
           cardData.vx *= -bounceDamping;
@@ -478,26 +617,22 @@
           cardData.vy *= -bounceDamping;
         }
 
-        // 5. Render Position
         el.style.transform = `translate(${cardData.x}px, ${cardData.y}px)`;
       });
 
-      // Loop to next frame
       physicsLoopId = requestAnimationFrame(updatePhysics);
     }
-    /* -------------------------------------- */
-
 
     async function handleFormSubmit(e) {
       e.preventDefault();
       if (!supabaseClient) {
-        alert('กรุณาตั้งค่า SUPABASE_URL และ SUPABASE_KEY ในไฟล์ index.html ก่อนใช้งาน');
+        alert(i18n[currentLang].alertNoSupabase);
         return;
       }
 
       const btn = document.getElementById('submit-btn');
       btn.disabled = true;
-      btn.innerText = 'กำลังอัปโหลด...';
+      btn.innerText = i18n[currentLang].btnSubmitting;
 
       const name = document.getElementById('input-name').value;
       const role = document.getElementById('input-role').value;
@@ -524,32 +659,26 @@
 
         const imageUrl = urlData.publicUrl;
 
-        // บันทึกลง Database พร้อมคอลัมน์ fit_mode
         const { error: dbErr } = await supabaseClient
           .from('memories')
           .insert([{ name, role, impression, image_url: imageUrl, fit_mode: fitMode }]);
 
         if (dbErr) throw dbErr;
 
-        // Trigger Confetti Effect 🎉
         if (window.confetti) {
-          confetti({
-            particleCount: 120,
-            spread: 80,
-            origin: { y: 0.6 }
-          });
+          confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
         }
 
-        alert('บันทึกความทรงจำเรียบร้อยแล้ว! 💖');
+        alert(i18n[currentLang].alertSuccess);
         document.getElementById('upload-form').reset();
         await fetchMemories();
         window.location.hash = 'wall';
 
       } catch (err) {
-        alert('เกิดข้อผิดพลาด: ' + err.message);
+        alert(i18n[currentLang].alertError + err.message);
       } finally {
         btn.disabled = false;
-        btn.innerText = 'บันทึกความทรงจำ 💖';
+        btn.innerText = i18n[currentLang].btnSubmit;
       }
     }
 
@@ -560,19 +689,21 @@
       allMemories.forEach(item => {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-700/50 transition';
-        const fitBadge = item.fit_mode === 'cover' ? '✂️ Cover' : '🖼️ Contain';
+        const fitBadge = item.fit_mode === 'cover' ? i18n[currentLang].fitCover : i18n[currentLang].fitContain;
+        const translatedRole = getRoleText(item.role);
+
         tr.innerHTML = `
           <td class="p-4">
             <img src="${item.image_url}" class="w-12 h-12 object-cover rounded-lg border border-slate-600">
           </td>
           <td class="p-4 font-semibold text-white">${item.name}</td>
-          <td class="p-4"><span class="text-xs bg-slate-700 px-2 py-1 rounded">${item.role}</span></td>
+          <td class="p-4"><span class="text-xs bg-slate-700 px-2 py-1 rounded">${translatedRole}</span></td>
           <td class="p-4 text-xs max-w-xs truncate">${item.impression}</td>
           <td class="p-4 text-xs text-slate-300">${fitBadge}</td>
           <td class="p-4 text-xs text-slate-400">${new Date(item.created_at).toLocaleDateString('th-TH')}</td>
           <td class="p-4 text-center space-x-2">
-            <button onclick='openEditModal(${JSON.stringify(item)})' class="px-2.5 py-1 text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded hover:bg-amber-500/30">แก้ไข</button>
-            <button onclick="deleteMemory('${item.id}')" class="px-2.5 py-1 text-xs bg-red-500/20 text-red-300 border border-red-500/30 rounded hover:bg-red-500/30">ลบ</button>
+            <button onclick='openEditModal(${JSON.stringify(item)})' class="px-2.5 py-1 text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded hover:bg-amber-500/30">${i18n[currentLang].btnEdit}</button>
+            <button onclick="deleteMemory('${item.id}')" class="px-2.5 py-1 text-xs bg-red-500/20 text-red-300 border border-red-500/30 rounded hover:bg-red-500/30">${i18n[currentLang].btnDelete}</button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -580,11 +711,11 @@
     }
 
     async function deleteMemory(id) {
-      if (!confirm('ยืนยันว่าต้องการลบรายการนี้ใช่หรือไม่?')) return;
+      if (!confirm(i18n[currentLang].confirmDelete)) return;
 
       const { error } = await supabaseClient.from('memories').delete().eq('id', id);
       if (error) {
-        alert('ลบไม่สำเร็จ: ' + error.message);
+        alert(i18n[currentLang].alertError + error.message);
       } else {
         await fetchMemories();
         renderAdminTable();
@@ -617,7 +748,7 @@
         .eq('id', id);
 
       if (error) {
-        alert('แก้ไขไม่สำเร็จ: ' + error.message);
+        alert(i18n[currentLang].alertError + error.message);
       } else {
         closeEditModal();
         await fetchMemories();
@@ -627,11 +758,11 @@
 
     function exportToCSV() {
       if (!allMemories || allMemories.length === 0) {
-        alert('ไม่มีข้อมูลสำหรับส่งออก');
+        alert(i18n[currentLang].alertNoExport);
         return;
       }
 
-      const headers = ['ID', 'ชื่อ-นามสกุล', 'สถานะ', 'ความรู้สึก', 'สไตล์รูป', 'URL รูปภาพ', 'วันที่'];
+      const headers = ['ID', 'Name', 'Role', 'Impression', 'Fit Style', 'Image URL', 'Date'];
       const rows = allMemories.map(item => [
         `"${item.id}"`,
         `"${(item.name || '').replace(/"/g, '""')}"`,
@@ -678,7 +809,7 @@
       }
 
       document.getElementById('modal-name').innerText = item.name;
-      document.getElementById('modal-role').innerText = item.role;
+      document.getElementById('modal-role').innerText = getRoleText(item.role);
       document.getElementById('modal-impression').innerText = item.impression;
       document.getElementById('card-modal').classList.remove('hidden');
     }
