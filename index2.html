@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stalingrad: 15 Waves of Survival</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK v8 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased selection:bg-red-900 selection:text-white">
+
+    <!-- APP CONTAINER -->
+    <div id="app" class="max-w-4xl mx-auto p-3 sm:p-5">
+
+        <!-- ================= 1. LOBBY SCREEN ================= -->
+        <div id="screen-lobby" class="flex flex-col items-center justify-center min-h-[85vh] space-y-6">
+            <div class="text-center space-y-2">
+                <div class="inline-block bg-red-950/80 border border-red-800 text-red-400 text-xs px-3 py-1 rounded-full font-mono font-bold tracking-widest uppercase mb-1">
+                    Phygital Board Game Assistant
+                </div>
+                <h1 class="text-4xl sm:text-5xl font-extrabold tracking-wider text-red-600 drop-shadow-lg">STALINGRAD</h1>
+                <p class="text-slate-400 text-xs sm:text-sm tracking-widest uppercase">15 Waves of Survival — Complete Edition</p>
+            </div>
+
+            <!-- Firebase Alert -->
+            <div id="firebase-alert" class="w-full max-w-md bg-amber-950/90 border border-amber-600 text-amber-200 p-3.5 rounded-xl text-xs hidden shadow-xl">
+                <i class="fa-solid fa-triangle-exclamation mr-1.5 text-amber-400 text-sm"></i> 
+                กรุณาใส่ <strong>firebaseConfig</strong> ในโค้ด JS ด้านล่างก่อนเริ่มใช้งาน real-time database ครับ
+            </div>
+
+            <div class="bg-slate-800/90 border border-slate-700 p-6 rounded-2xl w-full max-w-md shadow-2xl space-y-5 backdrop-blur-sm">
+                <!-- Select Mode -->
+                <div class="space-y-3">
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">เลือกบทบาทของคุณ</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="setRole('gm')" id="btn-role-gm" class="py-3 px-4 rounded-xl border border-slate-600 bg-slate-700 hover:bg-slate-600 font-bold transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-user-gear text-amber-400"></i> กรรมการ (GM)
+                        </button>
+                        <button onclick="setRole('player')" id="btn-role-player" class="py-3 px-4 rounded-xl border border-slate-600 bg-slate-700 hover:bg-slate-600 font-bold transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-gamepad text-emerald-400"></i> ผู้เล่น (Player)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- GM Panel in Lobby -->
+                <div id="lobby-gm-panel" class="space-y-4 hidden border-t border-slate-700 pt-4">
+                    <button onclick="createRoom()" class="w-full py-3 bg-red-700 hover:bg-red-600 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm">
+                        <i class="fa-solid fa-plus-circle"></i> สร้างห้องใหม่ (Create Room)
+                    </button>
+                </div>
+
+                <!-- Player Panel in Lobby -->
+                <div id="lobby-player-panel" class="space-y-4 hidden border-t border-slate-700 pt-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1">กรอก Room Code (4 หลัก)</label>
+                        <input type="text" id="input-room-code" placeholder="เช่น STG-1942" class="w-full bg-slate-900 border border-slate-600 rounded-xl px-4 py-2.5 text-center font-mono text-xl uppercase tracking-widest text-white focus:outline-none focus:border-red-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-2">เลือกฝ่ายที่จะเล่น</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="setSide('soviet')" id="btn-side-soviet" class="py-2.5 rounded-xl border border-red-900 bg-red-950/40 text-red-400 font-bold transition">🔴 ฝ่ายโซเวียต</button>
+                            <button onclick="setSide('german')" id="btn-side-german" class="py-2.5 rounded-xl border border-slate-600 bg-slate-900 text-slate-300 font-bold transition">🖤 ฝ่ายเยอรมัน</button>
+                        </div>
+                    </div>
+                    <button onclick="joinRoom()" class="w-full py-3 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-sm">
+                        <i class="fa-solid fa-right-to-bracket"></i> Join Party
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 2. GM SCREEN (LAPTOP VIEW) ================= -->
+        <div id="screen-gm" class="space-y-5 hidden">
+            <!-- Header Status & Timer Controls -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                <!-- Room Code & Connection -->
+                <div class="space-y-1">
+                    <span class="text-[10px] text-slate-400 uppercase tracking-wider">Room Code</span>
+                    <h2 id="gm-display-room" class="text-2xl font-mono font-bold text-amber-400">#----</h2>
+                    <div class="flex items-center gap-3 text-xs pt-1">
+                        <span id="status-soviet" class="text-slate-400">🔴 Soviet: <b class="status-dot">Offline ❌</b></span>
+                        <span id="status-german" class="text-slate-400">🖤 German: <b class="status-dot">Offline ❌</b></span>
+                    </div>
+                </div>
+
+                <!-- Turn Phase Timer Controls -->
+                <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 text-center space-y-1.5">
+                    <div class="flex items-center justify-between text-xs font-bold text-slate-400">
+                        <span><i class="fa-solid fa-stopwatch text-amber-400 mr-1"></i>Turn Timer</span>
+                        <span id="gm-val-timer" class="font-mono text-xl font-extrabold text-amber-400">60s</span>
+                    </div>
+                    <div class="flex gap-1.5 justify-center">
+                        <button onclick="controlTimer('start', 60)" class="px-2.5 py-1 bg-emerald-800 hover:bg-emerald-700 text-emerald-100 rounded text-xs font-bold transition"><i class="fa-solid fa-play"></i> Start 60s</button>
+                        <button onclick="controlTimer('pause')" class="px-2.5 py-1 bg-amber-800 hover:bg-amber-700 text-amber-100 rounded text-xs font-bold transition"><i class="fa-solid fa-pause"></i> Pause</button>
+                        <button onclick="controlTimer('reset')" class="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-xs font-bold transition"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+                    </div>
+                </div>
+
+                <!-- Wave Counter & Control -->
+                <div class="flex items-center justify-end gap-3">
+                    <div class="text-right">
+                        <span class="text-[10px] text-slate-400 uppercase block">Current Wave</span>
+                        <span id="gm-val-wave" class="text-3xl font-bold font-mono text-white">1</span><span class="text-slate-500 font-bold">/15</span>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <button onclick="adjustWave(1)" class="w-8 h-6 rounded bg-slate-700 hover:bg-slate-600 font-bold text-xs flex items-center justify-center"><i class="fa-solid fa-chevron-up"></i></button>
+                        <button onclick="adjustWave(-1)" class="w-8 h-6 rounded bg-slate-700 hover:bg-slate-600 font-bold text-xs flex items-center justify-center"><i class="fa-solid fa-chevron-down"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Generator Box -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 space-y-2.5">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-xs sm:text-sm text-slate-300"><i class="fa-solid fa-map-location-dot text-amber-400 mr-2"></i>สุ่มพิกัดโทเคนกระดาน 12×12 (Procedural Generator)</h3>
+                    <button onclick="generateMapCoords()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-xs font-bold rounded-lg transition shadow">
+                        <i class="fa-solid fa-dice mr-1"></i> Generate Map (24 Points)
+                    </button>
+                </div>
+                <div id="gm-map-coords" class="text-xs font-mono bg-slate-900 p-3 rounded-xl border border-slate-700 text-slate-400 min-h-[40px] flex items-center leading-relaxed">
+                    กดปุ่มเพื่อสุ่มพิกัดนำโทเคน 24 อันไปวางคว่ำหน้าบนกระดานจริง...
+                </div>
+            </div>
+
+            <!-- Global Resource Controller -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <!-- City HP -->
+                <div class="bg-slate-800 border border-slate-700 p-3 rounded-xl text-center space-y-2">
+                    <span class="text-xs font-bold text-red-400"><i class="fa-solid fa-heart mr-1"></i>City HP</span>
+                    <div id="gm-val-cityHp" class="text-2xl font-bold font-mono">100</div>
+                    <div class="flex justify-center gap-1">
+                        <button onclick="adjustResource('cityHp', -10)" class="px-2 py-1 bg-red-950 text-red-400 rounded text-xs">-10</button>
+                        <button onclick="adjustResource('cityHp', -5)" class="px-2 py-1 bg-red-900 text-red-300 rounded text-xs">-5</button>
+                        <button onclick="adjustResource('cityHp', 5)" class="px-2 py-1 bg-emerald-900 text-emerald-300 rounded text-xs">+5</button>
+                        <button onclick="adjustResource('cityHp', 15)" class="px-2 py-1 bg-emerald-950 text-emerald-400 rounded text-xs">+15</button>
+                    </div>
+                </div>
+                <!-- Food -->
+                <div class="bg-slate-800 border border-slate-700 p-3 rounded-xl text-center space-y-2">
+                    <span class="text-xs font-bold text-amber-400"><i class="fa-solid fa-wheat-awn mr-1"></i>Food</span>
+                    <div id="gm-val-food" class="text-2xl font-bold font-mono">60</div>
+                    <div class="flex justify-center gap-1">
+                        <button onclick="adjustResource('food', -10)" class="px-2 py-1 bg-red-950 text-red-400 rounded text-xs">-10</button>
+                        <button onclick="adjustResource('food', -5)" class="px-2 py-1 bg-red-900 text-red-300 rounded text-xs">-5</button>
+                        <button onclick="adjustResource('food', 5)" class="px-2 py-1 bg-emerald-900 text-emerald-300 rounded text-xs">+5</button>
+                        <button onclick="adjustResource('food', 20)" class="px-2 py-1 bg-emerald-950 text-emerald-400 rounded text-xs">+20</button>
+                    </div>
+                </div>
+                <!-- Ammo -->
+                <div class="bg-slate-800 border border-slate-700 p-3 rounded-xl text-center space-y-2">
+                    <span class="text-xs font-bold text-emerald-400"><i class="fa-solid fa-burst mr-1"></i>Ammo</span>
+                    <div id="gm-val-ammo" class="text-2xl font-bold font-mono">40</div>
+                    <div class="flex justify-center gap-1">
+                        <button onclick="adjustResource('ammo', -10)" class="px-2 py-1 bg-red-950 text-red-400 rounded text-xs">-10</button>
+                        <button onclick="adjustResource('ammo', -5)" class="px-2 py-1 bg-red-900 text-red-300 rounded text-xs">-5</button>
+                        <button onclick="adjustResource('ammo', 5)" class="px-2 py-1 bg-emerald-900 text-emerald-300 rounded text-xs">+5</button>
+                        <button onclick="adjustResource('ammo', 20)" class="px-2 py-1 bg-emerald-950 text-emerald-400 rounded text-xs">+20</button>
+                    </div>
+                </div>
+                <!-- Warmth -->
+                <div class="bg-slate-800 border border-slate-700 p-3 rounded-xl text-center space-y-2">
+                    <span class="text-xs font-bold text-orange-400"><i class="fa-solid fa-fire mr-1"></i>Warmth</span>
+                    <div id="gm-val-warmth" class="text-2xl font-bold font-mono">100</div>
+                    <div class="flex justify-center gap-1">
+                        <button onclick="adjustResource('warmth', -20)" class="px-2 py-1 bg-red-950 text-red-400 rounded text-xs">-20</button>
+                        <button onclick="adjustResource('warmth', -10)" class="px-2 py-1 bg-red-900 text-red-300 rounded text-xs">-10</button>
+                        <button onclick="adjustResource('warmth', 10)" class="px-2 py-1 bg-emerald-900 text-emerald-300 rounded text-xs">+10</button>
+                        <button onclick="adjustResource('warmth', 20)" class="px-2 py-1 bg-emerald-950 text-emerald-400 rounded text-xs">+20</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Boss HP Control Panel -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-sm text-red-400"><i class="fa-solid fa-skull mr-2"></i>Boss HP Controller</h3>
+                    <div class="text-xs font-mono">Current HP: <span id="gm-val-bossHp" class="font-bold text-red-400 text-base">0</span> / <span id="gm-val-bossMaxHp">0</span></div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="setBoss('Stuka Air Raid (Wave 3)', 50)" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-700 border border-slate-600 rounded-lg text-xs">Wave 3 (Stuka 50 HP)</button>
+                    <button onclick="setBoss('Panzer IV (Wave 7)', 80)" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-700 border border-slate-600 rounded-lg text-xs">Wave 7 (Panzer 80 HP)</button>
+                    <button onclick="setBoss('Zhukov Spearhead (Wave 11)', 50)" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-700 border border-slate-600 rounded-lg text-xs">Wave 11 (Uranus 50 HP)</button>
+                    <button onclick="setBoss('Paulus Bunker (Wave 15)', 150)" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-700 border border-slate-600 rounded-lg text-xs">Wave 15 (Paulus 150 HP)</button>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="adjustBossHp(-10)" class="flex-1 py-1.5 bg-red-900 hover:bg-red-800 rounded-lg text-xs font-bold">-10 HP</button>
+                    <button onclick="adjustBossHp(-20)" class="flex-1 py-1.5 bg-red-900 hover:bg-red-800 rounded-lg text-xs font-bold">-20 HP</button>
+                    <button onclick="adjustBossHp(-30)" class="flex-1 py-1.5 bg-red-900 hover:bg-red-800 rounded-lg text-xs font-bold">-30 HP</button>
+                    <button onclick="adjustBossHp(-50)" class="flex-1 py-1.5 bg-red-950 hover:bg-red-900 text-red-300 rounded-lg text-xs font-bold">-50 HP</button>
+                </div>
+            </div>
+
+            <!-- Card Quick-Action Buttons -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 space-y-3">
+                <h3 class="font-bold text-sm text-slate-300"><i class="fa-solid fa-bolt text-amber-400 mr-2"></i>Quick-Action การ์ดจริงบนโต๊ะ (กดรับผล Real-time)</h3>
+                
+                <!-- Soviet Cards -->
+                <div class="space-y-1">
+                    <span class="text-[10px] font-bold text-red-400 tracking-wider uppercase">🔴 Soviet Cards</span>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <button onclick="cardAction('Vasily')" class="py-2 px-3 bg-red-950/60 hover:bg-red-900 border border-red-800 rounded-lg text-xs text-left">🎯 สไนเปอร์วาสิลี (Boss -20)</button>
+                        <button onclick="cardAction('T34')" class="py-2 px-3 bg-red-950/60 hover:bg-red-900 border border-red-800 rounded-lg text-xs text-left">🚜 รถถัง T-34 (Boss -30)</button>
+                        <button onclick="cardAction('Volga')" class="py-2 px-3 bg-red-950/60 hover:bg-red-900 border border-red-800 rounded-lg text-xs text-left">🍞 เสบียงวอลกา (Food +20)</button>
+                        <button onclick="cardAction('Order227')" class="py-2 px-3 bg-red-950/60 hover:bg-red-900 border border-red-800 rounded-lg text-xs text-left">📜 คำสั่ง No.227 (City +15)</button>
+                        <button onclick="cardAction('FieldStove')" class="py-2 px-3 bg-red-950/60 hover:bg-red-900 border border-red-800 rounded-lg text-xs text-left">🔥 เตาสนาม (Warmth +20)</button>
+                    </div>
+                </div>
+
+                <!-- German Cards -->
+                <div class="space-y-1 pt-2">
+                    <span class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">🖤 German Cards</span>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <button onclick="cardAction('PanzerIV')" class="py-2 px-3 bg-slate-900 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs text-left">💥 Panzer IV (City -20)</button>
+                        <button onclick="cardAction('Flamethrower')" class="py-2 px-3 bg-slate-900 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs text-left">🔥 พ่นไฟ (City -15, Food -10)</button>
+                        <button onclick="cardAction('Stuka')" class="py-2 px-3 bg-slate-900 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs text-left">✈️ ฝูงบิน Stuka (City -25)</button>
+                        <button onclick="cardAction('Blizzard')" class="py-2 px-3 bg-slate-900 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs text-left">❄️ พายุหิมะ (Warmth -20)</button>
+                    </div>
+                </div>
+
+                <!-- Treasure Cards -->
+                <div class="space-y-1 pt-2">
+                    <span class="text-[10px] font-bold text-amber-500 tracking-wider uppercase">📦 Central Treasure Cards</span>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <button onclick="cardAction('CannedFood')" class="py-2 px-3 bg-amber-950/40 hover:bg-amber-900/60 border border-amber-800/60 rounded-lg text-xs text-left">🥫 อาหารกระป๋อง (Food +20)</button>
+                        <button onclick="cardAction('AmmoCrate')" class="py-2 px-3 bg-amber-950/40 hover:bg-amber-900/60 border border-amber-800/60 rounded-lg text-xs text-left">💣 ลังกระสุน (Ammo +20)</button>
+                        <button onclick="cardAction('FuelBarrel')" class="py-2 px-3 bg-amber-950/40 hover:bg-amber-900/60 border border-amber-800/60 rounded-lg text-xs text-left">⛽ ถังน้ำมัน (Warmth +25)</button>
+                        <button onclick="cardAction('Sandbags')" class="py-2 px-3 bg-amber-950/40 hover:bg-amber-900/60 border border-amber-800/60 rounded-lg text-xs text-left">🛡️ กระสอบทราย (City +15)</button>
+                        <button onclick="cardAction('MineTrap')" class="py-2 px-3 bg-amber-950/40 hover:bg-amber-900/60 border border-amber-800/60 rounded-lg text-xs text-left">⚠️ กับระเบิดซวย (City -15)</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-time Action Log Feed (GM Side) -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 space-y-2">
+                <h3 class="font-bold text-xs text-slate-400 uppercase tracking-wider"><i class="fa-solid fa-list-check mr-2 text-amber-400"></i>Action Log Feed (ประวัติการเล่นเรียลไทม์)</h3>
+                <div id="gm-log-feed" class="bg-slate-900 p-3 rounded-xl border border-slate-700 h-32 overflow-y-auto space-y-1.5 text-xs font-mono">
+                    <div class="text-slate-500 italic">ยังไม่มีประวัติการกระทำ...</div>
+                </div>
+            </div>
+
+            <!-- Ending Manager -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 space-y-3">
+                <h3 class="font-bold text-sm text-amber-400"><i class="fa-solid fa-trophy mr-2"></i>Ending Trigger Manager (สั่งรันฉากจบเต็มจอ)</h3>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <button onclick="triggerEnding(1)" class="py-2 px-2 bg-red-950 border border-red-700 text-red-300 rounded-lg text-xs font-bold">1. Red Army Victory</button>
+                    <button onclick="triggerEnding(2)" class="py-2 px-2 bg-emerald-950 border border-emerald-700 text-emerald-300 rounded-lg text-xs font-bold">2. Christmas Truce</button>
+                    <button onclick="triggerEnding(3)" class="py-2 px-2 bg-slate-900 border border-slate-600 text-slate-300 rounded-lg text-xs font-bold">3. City Fallen</button>
+                    <button onclick="triggerEnding(4)" class="py-2 px-2 bg-amber-950 border border-amber-700 text-amber-300 rounded-lg text-xs font-bold">4. Starvation Defeat</button>
+                    <button onclick="triggerEnding(5)" class="py-2 px-2 bg-sky-950 border border-sky-700 text-sky-300 rounded-lg text-xs font-bold">5. Frozen Graveyard</button>
+                    <button onclick="triggerEnding(6)" class="py-2 px-2 bg-purple-950 border border-purple-700 text-purple-300 rounded-lg text-xs font-bold">6. Wunderwaffe Atomic</button>
+                    <button onclick="triggerEnding(7)" class="py-2 px-2 bg-stone-900 border border-stone-600 text-stone-300 rounded-lg text-xs font-bold col-span-2">7. Mutual Annihilation</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 3. PLAYER DASHBOARD (MOBILE VIEW) ================= -->
+        <div id="screen-player" class="space-y-4 hidden max-w-md mx-auto">
+            <!-- Header Info & Controls -->
+            <div class="flex items-center justify-between bg-slate-800 border border-slate-700 p-4 rounded-2xl">
+                <div>
+                    <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Your Faction</span>
+                    <h2 id="player-display-side" class="text-lg font-bold">--</h2>
+                </div>
+                <!-- Audio Mute Toggle Button -->
+                <button onclick="toggleAudioMute()" id="btn-audio-mute" class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-emerald-400">
+                    <i class="fa-solid fa-volume-high mr-1"></i> Sound ON
+                </button>
+                <div class="text-right">
+                    <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Wave</span>
+                    <span id="player-val-wave" class="text-2xl font-mono font-bold text-amber-400">1</span>/15
+                </div>
+            </div>
+
+            <!-- Turn Timer Bar Display for Player -->
+            <div id="player-timer-card" class="bg-slate-800 border border-slate-700 p-3 rounded-2xl flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-300"><i class="fa-solid fa-stopwatch text-amber-400 mr-1.5"></i>Turn Timer</span>
+                <span id="player-val-timer" class="font-mono text-2xl font-extrabold text-amber-400">60s</span>
+            </div>
+
+            <!-- Real-time Resource Bars -->
+            <div class="bg-slate-800 border border-slate-700 p-4 sm:p-5 rounded-2xl space-y-4 shadow-xl">
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Real-time Survival Meters</h3>
+
+                <!-- City HP -->
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-bold">
+                        <span class="text-red-400"><i class="fa-solid fa-heart mr-1"></i>City HP (ป้อมเมือง)</span>
+                        <span id="player-val-cityHp" class="font-mono text-sm">100</span>
+                    </div>
+                    <div class="w-full h-3.5 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
+                        <div id="bar-cityHp" class="h-full bg-red-600 transition-all duration-500" style="width: 100%;"></div>
+                    </div>
+                </div>
+
+                <!-- Food -->
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-bold">
+                        <span class="text-amber-400"><i class="fa-solid fa-wheat-awn mr-1"></i>Food (เสบียงอาหาร)</span>
+                        <span id="player-val-food" class="font-mono text-sm">60</span>
+                    </div>
+                    <div class="w-full h-3.5 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
+                        <div id="bar-food" class="h-full bg-amber-500 transition-all duration-500" style="width: 60%;"></div>
+                    </div>
+                </div>
+
+                <!-- Ammo -->
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-bold">
+                        <span class="text-emerald-400"><i class="fa-solid fa-burst mr-1"></i>Ammo (คลังกระสุน)</span>
+                        <span id="player-val-ammo" class="font-mono text-sm">40</span>
+                    </div>
+                    <div class="w-full h-3.5 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
+                        <div id="bar-ammo" class="h-full bg-emerald-500 transition-all duration-500" style="width: 40%;"></div>
+                    </div>
+                </div>
+
+                <!-- Warmth -->
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-bold">
+                        <span class="text-orange-400"><i class="fa-solid fa-fire mr-1"></i>Warmth (ความอบอุ่น)</span>
+                        <span id="player-val-warmth" class="font-mono text-sm">100</span>
+                    </div>
+                    <div class="w-full h-3.5 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
+                        <div id="bar-warmth" class="h-full bg-orange-500 transition-all duration-500" style="width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Boss Alert Card -->
+            <div id="player-boss-card" class="bg-red-950/90 border border-red-700 p-4 rounded-2xl space-y-2 hidden animate-pulse">
+                <div class="flex items-center justify-between text-red-200">
+                    <span class="text-xs font-extrabold tracking-wider uppercase"><i class="fa-solid fa-triangle-exclamation mr-1"></i>BOSS ALERT!</span>
+                    <span id="player-boss-name" class="text-xs font-bold">Stuka Air Raid</span>
+                </div>
+                <div class="flex justify-between items-baseline">
+                    <span class="text-xs text-red-300">Boss HP Remaining:</span>
+                    <span id="player-val-bossHp" class="text-3xl font-mono font-extrabold text-white">50</span>
+                </div>
+            </div>
+
+            <!-- Real-time Action Log Feed (Player Mobile Side) -->
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl p-4 space-y-2">
+                <h3 class="font-bold text-xs text-slate-400 uppercase tracking-wider"><i class="fa-solid fa-clock-rotate-left mr-1.5 text-amber-400"></i>Action Log Feed</h3>
+                <div id="player-log-feed" class="bg-slate-900 p-3 rounded-xl border border-slate-700 h-28 overflow-y-auto space-y-1.5 text-xs font-mono">
+                    <div class="text-slate-500 italic">รอรับการอัปเดตกิจกรรม...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 4. FULLSCREEN ENDING OVERLAY ================= -->
+        <div id="overlay-ending" class="fixed inset-0 bg-slate-950/95 z-50 flex flex-col items-center justify-center p-6 text-center space-y-6 hidden">
+            <div id="ending-icon" class="text-6xl text-amber-500 animate-bounce">🏆</div>
+            <h1 id="ending-title" class="text-2xl sm:text-3xl font-extrabold text-white tracking-wide">ENDING TITLE</h1>
+            <p id="ending-desc" class="text-slate-300 text-sm max-w-md leading-relaxed">Ending description text goes here...</p>
+            <button onclick="resetApp()" class="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl font-bold text-xs transition">
+                <i class="fa-solid fa-rotate-left mr-1"></i> กลับสู่หน้าหลัก
+            </button>
+        </div>
+
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // 1. FIREBASE CONFIGURATION (กรุณาใส่ค่าจาก Firebase Console ของคุณ)
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef"
+        };
+
+        // Initialize Firebase
+        let db = null;
+        try {
+            if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.database();
+            } else {
+                document.getElementById('firebase-alert').classList.remove('hidden');
+            }
+        } catch(e) { console.error("Firebase init error:", e); }
+
+        // State Variables
+        let currentRole = null; // 'gm' | 'player'
+        let currentSide = null; // 'soviet' | 'german'
+        let currentRoomCode = null;
+        let roomRef = null;
+        let localTimerInterval = null;
+        let audioMuted = false;
+
+        // --- WEB AUDIO API SFX ENGINE (ไร้ไฟล์ MP3 ภายนอก) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSFX(type) {
+            if (audioMuted) return;
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                if (type === 'beep') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(800, now);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                } else if (type === 'card') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'boss') {
+                    // Siren alert
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.linearRampToValueAtTime(600, now + 0.3);
+                    osc.frequency.linearRampToValueAtTime(300, now + 0.6);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.6);
+                    osc.start(now);
+                    osc.stop(now + 0.6);
+                } else if (type === 'victory') {
+                    // Victory Chime
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, i) => {
+                        const o = audioCtx.createOscillator();
+                        const g = audioCtx.createGain();
+                        o.connect(g);
+                        g.connect(audioCtx.destination);
+                        o.frequency.setValueAtTime(freq, now + i * 0.12);
+                        g.gain.setValueAtTime(0.2, now + i * 0.12);
+                        g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.12 + 0.3);
+                        o.start(now + i * 0.12);
+                        o.stop(now + i * 0.12 + 0.3);
+                    });
+                } else if (type === 'timeout') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(200, now);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    osc.start(now);
+                    osc.stop(now + 0.5);
+                }
+            } catch(e) { console.error("Audio error:", e); }
+        }
+
+        function toggleAudioMute() {
+            audioMuted = !audioMuted;
+            const btn = document.getElementById('btn-audio-mute');
+            btn.innerHTML = audioMuted ? 
+                '<i class="fa-solid fa-volume-xmark mr-1"></i> Sound OFF' : 
+                '<i class="fa-solid fa-volume-high mr-1"></i> Sound ON';
+            btn.className = audioMuted ? 
+                'px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-slate-500' : 
+                'px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-bold text-emerald-400';
+        }
+
+        // --- LOBBY NAVIGATION ---
+        function setRole(role) {
+            currentRole = role;
+            document.getElementById('btn-role-gm').className = role === 'gm' ? 'py-3 px-4 rounded-xl border-2 border-amber-500 bg-amber-950/40 font-bold transition flex items-center justify-center gap-2 text-amber-300' : 'py-3 px-4 rounded-xl border border-slate-600 bg-slate-700 font-bold transition flex items-center justify-center gap-2';
+            document.getElementById('btn-role-player').className = role === 'player' ? 'py-3 px-4 rounded-xl border-2 border-emerald-500 bg-emerald-950/40 font-bold transition flex items-center justify-center gap-2 text-emerald-300' : 'py-3 px-4 rounded-xl border border-slate-600 bg-slate-700 font-bold transition flex items-center justify-center gap-2';
+            
+            document.getElementById('lobby-gm-panel').classList.toggle('hidden', role !== 'gm');
+            document.getElementById('lobby-player-panel').classList.toggle('hidden', role !== 'player');
+        }
+
+        function setSide(side) {
+            currentSide = side;
+            document.getElementById('btn-side-soviet').className = side === 'soviet' ? 'py-2.5 rounded-xl border-2 border-red-500 bg-red-900/60 text-white font-bold transition' : 'py-2.5 rounded-xl border border-red-900 bg-red-950/40 text-red-400 font-bold transition';
+            document.getElementById('btn-side-german').className = side === 'german' ? 'py-2.5 rounded-xl border-2 border-slate-300 bg-slate-700 text-white font-bold transition' : 'py-2.5 rounded-xl border border-slate-600 bg-slate-900 text-slate-300 font-bold transition';
+        }
+
+        // --- ROOM CREATION & JOINING ---
+        function createRoom() {
+            if (!db) return alert('กรุณาตั้งค่า firebaseConfig ก่อนใช้งานครับ');
+            const code = 'STG-' + Math.floor(1000 + Math.random() * 9000);
+            currentRoomCode = code;
+            roomRef = db.ref('rooms/' + code);
+
+            const initialData = {
+                status: 'WAITING',
+                wave: 1,
+                resources: { cityHp: 100, food: 60, ammo: 40, warmth: 100 },
+                boss: { name: '', hp: 0, maxHp: 0 },
+                players: { soviet: false, german: false },
+                timer: { targetTime: 0, isRunning: false, remaining: 60 },
+                logs: [],
+                activeEnding: null
+            };
+
+            roomRef.set(initialData).then(() => {
+                listenToRoom();
+                showScreen('screen-gm');
+                document.getElementById('gm-display-room').innerText = '#' + code;
+                addLog('ระบบเปิดห้องเกมเรียบร้อย (# ' + code + ')', 'fa-house-flag');
+            });
+        }
+
+        function joinRoom() {
+            if (!db) return alert('กรุณาตั้งค่า firebaseConfig ก่อนใช้งานครับ');
+            const inputCode = document.getElementById('input-room-code').value.trim().toUpperCase();
+            if (!inputCode) return alert('กรุณากรอก Room Code');
+            if (!currentSide) return alert('กรุณาเลือกฝ่ายก่อนเข้าร่วม');
+
+            currentRoomCode = inputCode;
+            roomRef = db.ref('rooms/' + inputCode);
+
+            roomRef.once('value').then(snapshot => {
+                if (!snapshot.exists()) return alert('ไม่พบห้อง Room Code นี้');
+                
+                // Update player connection status
+                roomRef.child('players/' + currentSide).set(true);
+                roomRef.child('players/' + currentSide).onDisconnect().set(false);
+
+                listenToRoom();
+                showScreen('screen-player');
+                document.getElementById('player-display-side').innerText = currentSide === 'soviet' ? '🔴 โซเวียต (Soviet)' : '🖤 เยอรมัน (German)';
+                addLog(`ผู้เล่นฝ่าย ${currentSide === 'soviet' ? 'โซเวียต' : 'เยอรมัน'} เชื่อมต่อเข้าห้อง`, 'fa-user-check');
+            });
+        }
+
+        // --- REALTIME LISTENERS ---
+        function listenToRoom() {
+            roomRef.on('value', snapshot => {
+                const data = snapshot.val();
+                if (!data) return;
+
+                // Sync Timer
+                syncTimerState(data.timer);
+
+                // Sync Log Feed
+                renderLogs(data.logs);
+
+                // Update GM UI
+                if (currentRole === 'gm') {
+                    document.getElementById('gm-val-wave').innerText = data.wave;
+                    document.getElementById('gm-val-cityHp').innerText = data.resources.cityHp;
+                    document.getElementById('gm-val-food').innerText = data.resources.food;
+                    document.getElementById('gm-val-ammo').innerText = data.resources.ammo;
+                    document.getElementById('gm-val-warmth').innerText = data.resources.warmth;
+                    document.getElementById('gm-val-bossHp').innerText = data.boss.hp;
+                    document.getElementById('gm-val-bossMaxHp').innerText = data.boss.maxHp;
+
+                    // Update player connection status indicators
+                    const sovDot = document.querySelector('#status-soviet .status-dot');
+                    const gerDot = document.querySelector('#status-german .status-dot');
+                    if (sovDot) sovDot.innerText = data.players?.soviet ? 'Connected ✅' : 'Offline ❌';
+                    if (gerDot) gerDot.innerText = data.players?.german ? 'Connected ✅' : 'Offline ❌';
+                }
+
+                // Update Player UI
+                if (currentRole === 'player') {
+                    document.getElementById('player-val-wave').innerText = data.wave;
+                    document.getElementById('player-val-cityHp').innerText = data.resources.cityHp;
+                    document.getElementById('player-val-food').innerText = data.resources.food;
+                    document.getElementById('player-val-ammo').innerText = data.resources.ammo;
+                    document.getElementById('player-val-warmth').innerText = data.resources.warmth;
+
+                    // Update Progress Bars
+                    document.getElementById('bar-cityHp').style.width = Math.max(0, Math.min(100, data.resources.cityHp)) + '%';
+                    document.getElementById('bar-food').style.width = Math.max(0, Math.min(100, data.resources.food)) + '%';
+                    document.getElementById('bar-ammo').style.width = Math.max(0, Math.min(100, data.resources.ammo)) + '%';
+                    document.getElementById('bar-warmth').style.width = Math.max(0, Math.min(100, data.resources.warmth)) + '%';
+
+                    // Update Boss Alert Card
+                    const bossCard = document.getElementById('player-boss-card');
+                    if (data.boss && data.boss.hp > 0) {
+                        bossCard.classList.remove('hidden');
+                        document.getElementById('player-boss-name').innerText = data.boss.name;
+                        document.getElementById('player-val-bossHp').innerText = data.boss.hp;
+                    } else {
+                        bossCard.classList.add('hidden');
+                    }
+                }
+
+                // Handle Ending Overlay
+                if (data.activeEnding) {
+                    renderEndingOverlay(data.activeEnding);
+                } else {
+                    document.getElementById('overlay-ending').classList.add('hidden');
+                }
+            });
+        }
+
+        // --- TIMER ENGINE ---
+        function controlTimer(action, seconds = 60) {
+            if (!roomRef) return;
+            if (action === 'start') {
+                const targetTime = Date.now() + seconds * 1000;
+                roomRef.child('timer').set({ targetTime: targetTime, isRunning: true, remaining: seconds });
+                addLog('เริ่มนาฬิกานับถอยหลัง 60 วินาที', 'fa-stopwatch');
+                playSFX('beep');
+            } else if (action === 'pause') {
+                roomRef.child('timer/isRunning').set(false);
+                addLog('หยุดชั่วคราวนาฬิกานับถอยหลัง', 'fa-pause');
+            } else if (action === 'reset') {
+                roomRef.child('timer').set({ targetTime: 0, isRunning: false, remaining: 60 });
+                addLog('รีเซ็ตนาฬิกาเป็น 60 วินาที', 'fa-rotate-left');
+            }
+        }
+
+        function syncTimerState(timerData) {
+            if (localTimerInterval) clearInterval(localTimerInterval);
+            if (!timerData) return;
+
+            const gmTimer = document.getElementById('gm-val-timer');
+            const playerTimer = document.getElementById('player-val-timer');
+
+            if (timerData.isRunning && timerData.targetTime > 0) {
+                localTimerInterval = setInterval(() => {
+                    const now = Date.now();
+                    const diff = Math.max(0, Math.ceil((timerData.targetTime - now) / 1000));
+                    
+                    if (gmTimer) gmTimer.innerText = diff + 's';
+                    if (playerTimer) playerTimer.innerText = diff + 's';
+
+                    if (diff === 10 || diff === 5) playSFX('beep');
+
+                    if (diff <= 0) {
+                        clearInterval(localTimerInterval);
+                        playSFX('timeout');
+                        if (currentRole === 'gm') roomRef.child('timer/isRunning').set(false);
+                    }
+                }, 250);
+            } else {
+                const val = (timerData.remaining || 60) + 's';
+                if (gmTimer) gmTimer.innerText = val;
+                if (playerTimer) playerTimer.innerText = val;
+            }
+        }
+
+        // --- ACTION LOG FEED SYSTEM ---
+        function addLog(text, icon = 'fa-circle-info') {
+            if (!roomRef) return;
+            const timeStr = new Date().toLocaleTimeString('th-TH', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const logEntry = { text: text, icon: icon, time: timeStr };
+            
+            roomRef.child('logs').push(logEntry);
+        }
+
+        function renderLogs(logsObj) {
+            if (!logsObj) return;
+            const logsArray = Object.values(logsObj).slice(-15).reverse(); // Show last 15
+            const html = logsArray.map(item => `
+                <div class="flex items-start gap-2 text-slate-300 border-b border-slate-800 pb-1">
+                    <span class="text-slate-500 font-mono text-[10px] whitespace-nowrap pt-0.5">[${item.time}]</span>
+                    <i class="fa-solid ${item.icon} text-amber-400 mt-0.5 text-xs"></i>
+                    <span class="flex-1 leading-tight">${item.text}</span>
+                </div>
+            `).join('');
+
+            const gmlog = document.getElementById('gm-log-feed');
+            const playerlog = document.getElementById('player-log-feed');
+            if (gmlog) gmlog.innerHTML = html;
+            if (playerlog) playerlog.innerHTML = html;
+        }
+
+        // --- GM ACTIONS ---
+        function adjustResource(type, delta) {
+            if (!roomRef) return;
+            roomRef.child('resources/' + type).transaction(val => Math.max(0, (val || 0) + delta));
+            const sign = delta > 0 ? '+' : '';
+            addLog(`ปรับค่า ${type.toUpperCase()}: ${sign}${delta}`, 'fa-sliders');
+            playSFX('beep');
+        }
+
+        function adjustWave(delta) {
+            if (!roomRef) return;
+            roomRef.child('wave').transaction(val => {
+                const next = Math.max(1, Math.min(15, (val || 1) + delta));
+                addLog(`เปลี่ยนสถานะเป็น Wave ${next}`, 'fa-flag-checkered');
+                return next;
+            });
+            playSFX('card');
+        }
+
+        function setBoss(name, hp) {
+            if (!roomRef) return;
+            roomRef.child('boss').set({ name: name, hp: hp, maxHp: hp });
+            addLog(`บอส ${name} ลงสู่กระดาน! (HP: ${hp})`, 'fa-skull');
+            playSFX('boss');
+        }
+
+        function adjustBossHp(delta) {
+            if (!roomRef) return;
+            roomRef.child('boss/hp').transaction(val => Math.max(0, (val || 0) + delta));
+            addLog(`ทำความเสียหายใส่บอส: ${delta} HP`, 'fa-crosshair');
+            playSFX('card');
+        }
+
+        function generateMapCoords() {
+            const cols = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+            const coords = new Set();
+            while(coords.size < 24) {
+                const c = cols[Math.floor(Math.random() * 12)];
+                const r = Math.floor(Math.random() * 12) + 1;
+                coords.add(`${c}${r}`);
+            }
+            const res = Array.from(coords).join(' • ');
+            document.getElementById('gm-map-coords').innerText = res;
+            addLog('สุ่มพิกัดโทเคนกระดาน 24 จุดสำเร็จ', 'fa-dice');
+            playSFX('card');
+        }
+
+        function cardAction(cardKey) {
+            playSFX('card');
+            switch(cardKey) {
+                case 'Vasily': adjustBossHp(-20); addLog('เล่นการ์ด: สไนเปอร์วาสิลี (Boss -20 HP)', 'fa-crosshair'); break;
+                case 'T34': adjustBossHp(-30); addLog('เล่นการ์ด: รถถัง T-34 (Boss -30 HP)', 'fa-shield-halved'); break;
+                case 'Volga': adjustResource('food', 20); addLog('เล่นการ์ด: เสบียงวอลกา (Food +20)', 'fa-wheat-awn'); break;
+                case 'Order227': adjustResource('cityHp', 15); addLog('เล่นการ์ด: คำสั่ง No.227 (City HP +15)', 'fa-scroll'); break;
+                case 'FieldStove': adjustResource('warmth', 20); addLog('เล่นการ์ด: เตาสนาม (Warmth +20)', 'fa-fire'); break;
+                case 'PanzerIV': adjustResource('cityHp', -20); addLog('เล่นการ์ด: Panzer IV (City HP -20)', 'fa-bomb'); break;
+                case 'Flamethrower': adjustResource('cityHp', -15); adjustResource('food', -10); addLog('เล่นการ์ด: พ่นไฟ (City -15, Food -10)', 'fa-fire-flame-curved'); break;
+                case 'Stuka': adjustResource('cityHp', -25); addLog('เล่นการ์ด: ฝูงบิน Stuka (City HP -25)', 'fa-plane'); break;
+                case 'Blizzard': adjustResource('warmth', -20); addLog('เล่นการ์ด: พายุหิมะ (Warmth -20)', 'fa-snowflake'); break;
+                case 'CannedFood': adjustResource('food', 20); addLog('สมบัติกลาง: อาหารกระป๋อง (Food +20)', 'fa-box-archive'); break;
+                case 'AmmoCrate': adjustResource('ammo', 20); addLog('สมบัติกลาง: ลังกระสุน (Ammo +20)', 'fa-box-archive'); break;
+                case 'FuelBarrel': adjustResource('warmth', 25); addLog('สมบัติกลาง: ถังน้ำมัน (Warmth +25)', 'fa-box-archive'); break;
+                case 'Sandbags': adjustResource('cityHp', 15); addLog('สมบัติกลาง: กระสอบทราย (City HP +15)', 'fa-shield'); break;
+                case 'MineTrap': adjustResource('cityHp', -15); addLog('สมบัติกลาง: กับระเบิดซวย (City HP -15)', 'fa-burst'); break;
+            }
+        }
+
+        function triggerEnding(endingId) {
+            if (!roomRef) return;
+            roomRef.child('activeEnding').set(endingId);
+            addLog(`เปิดใช้งานฉากจบรูปแบบที่ ${endingId}`, 'fa-trophy');
+            playSFX('victory');
+        }
+
+        // --- ENDINGS DISPLAY DATA ---
+        const endingsData = {
+            1: { title: "1. Red Army Triumph", icon: "🔴", desc: "โซเวียตรอดชีวิตครบ 15 Waves และปราบจอมพลเพาลุสสำเร็จ! ปักธงค้อนเคียวฉลองชัยเหนือซากเมืองสตาลินกราด!" },
+            2: { title: "2. Christmas Truce Miracle", icon: "🤝", desc: "ทั้งสองฝ่ายบรรลุข้อตกลงสงบศึกใน Wave 13 หยุดยิงและจับมือกันท่ามกลางหิมะ" },
+            3: { title: "3. City Fallen", icon: "💥", desc: "ป้อมปราการสตาลินกราดถูกถล่มพังทลาย หลอด City HP เหลือ 0 ฝั่งเยอรมันยึดเมืองสำเร็จ" },
+            4: { title: "4. Starvation Defeat", icon: "🍞", desc: "เสบียงอาหารหมดเกลี้ยง หลอด Food เหลือ 0 กองทัพโซเวียตต้องพ่ายแพ้แก่ความอดอยาก" },
+            5: { title: "5. The Frozen Graveyard", icon: "❄️", desc: "พายุหิมะแช่แข็งกลืนกินเมือง หลอด Warmth เหลือ 0 ทหารทั้งหมดแช่แข็งในสุสานหิมะ" },
+            6: { title: "6. Wunderwaffe Atomic Strike", icon: "☢️", desc: "เยอรมันสะสมการ์ดอาวุธลับครบ 3 ใบ ปล่อยนิวเคลียร์ล้างเมืองชนะเกมทันที!" },
+            7: { title: "7. Mutual Annihilation", icon: "💀", desc: "City HP และ Boss HP ลดลงเหลือ 0 พร้อมกันในคืนสุดท้าย พินาศย่อยยับทั้งสองฝ่าย ไร้ผู้ชนะ!" }
+        };
+
+        function renderEndingOverlay(endingId) {
+            const data = endingsData[endingId];
+            if (!data) return;
+            document.getElementById('ending-icon').innerText = data.icon;
+            document.getElementById('ending-title').innerText = data.title;
+            document.getElementById('ending-desc').innerText = data.desc;
+            document.getElementById('overlay-ending').classList.remove('hidden');
+        }
+
+        function resetApp() {
+            if (roomRef) roomRef.child('activeEnding').set(null);
+            location.reload();
+        }
+
+        function showScreen(screenId) {
+            document.getElementById('screen-lobby').classList.add('hidden');
+            document.getElementById('screen-gm').classList.add('hidden');
+            document.getElementById('screen-player').classList.add('hidden');
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
