@@ -35,7 +35,7 @@
                     Phygital Board Game Assistant
                 </div>
                 <h1 class="text-4xl sm:text-5xl font-extrabold tracking-wider text-red-600 drop-shadow-lg">STALINGRAD</h1>
-                <p class="text-slate-400 text-xs sm:text-sm tracking-widest uppercase">15 Waves of Survival — Manual Wave Control</p>
+                <p class="text-slate-400 text-xs sm:text-sm tracking-widest uppercase">15 Waves of Survival — Visual Endings Edition</p>
             </div>
 
             <!-- Firebase Alert -->
@@ -95,7 +95,6 @@
                     </div>
                 </div>
 
-                <!-- Admin Wave Shift Controller -->
                 <div class="bg-slate-900/90 border border-slate-700 p-3 rounded-xl flex items-center gap-4 shadow-lg">
                     <div class="text-left">
                         <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Manual Wave Controller</span>
@@ -125,12 +124,10 @@
                     </button>
                 </div>
                 
-                <!-- Text Coordinates List -->
                 <div id="gm-map-coords" class="text-xs font-mono bg-slate-900 p-2.5 rounded-xl border border-slate-700 text-slate-400 min-h-[36px] flex items-center leading-relaxed">
                     กดปุ่มเพื่อสุ่มพิกัดและแสดงผังตารางวางโทเคน...
                 </div>
 
-                <!-- 12x12 Visual Grid Display -->
                 <div id="gm-grid-visual" class="hidden mt-2 p-3 bg-slate-950 rounded-xl border border-slate-700 overflow-x-auto">
                 </div>
             </div>
@@ -338,9 +335,10 @@
             </div>
         </div>
 
-        <!-- ================= 4. FULLSCREEN ENDING OVERLAY ================= -->
-        <div id="overlay-ending" class="fixed inset-0 bg-slate-950/95 z-50 flex flex-col items-center justify-center p-6 text-center space-y-6 hidden">
-            <div id="ending-icon" class="text-6xl text-amber-500 animate-bounce">🏆</div>
+        <!-- ================= 4. FULLSCREEN ENDING OVERLAY (WITH IMAGE) ================= -->
+        <div id="overlay-ending" class="fixed inset-0 bg-slate-950/95 z-50 flex flex-col items-center justify-center p-6 text-center space-y-4 hidden overflow-y-auto">
+            <div id="ending-icon" class="text-5xl text-amber-500 animate-bounce">🏆</div>
+            <img id="ending-img" src="" alt="Ending Visual" class="w-full max-w-sm h-48 object-cover rounded-xl border-2 border-slate-700 shadow-2xl my-2">
             <h1 id="ending-title" class="text-2xl sm:text-3xl font-extrabold text-white tracking-wide">ENDING TITLE</h1>
             <p id="ending-desc" class="text-slate-300 text-sm max-w-md leading-relaxed">Ending description text goes here...</p>
             <button onclick="resetApp()" class="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl font-bold text-xs transition">
@@ -352,7 +350,7 @@
 
     <!-- JavaScript Application Logic -->
     <script>
-        // 1. FIREBASE CONFIGURATION (วางรหัสของคุณที่นี่)
+        // 1. FIREBASE CONFIGURATION
 const firebaseConfig = {
   apiKey: "AIzaSyBd2H4NjCzGuSobx0pA1AiS3jmq-Hhrk68",
   authDomain: "stalingrad-game.firebaseapp.com",
@@ -683,14 +681,50 @@ const firebaseConfig = {
             playSFX('victory');
         }
 
+        // 2. ENDINGS DATA WITH VISUAL ILLUSTRATION URLS
         const endingsData = {
-            1: { title: "1. Red Army Triumph", icon: "🔴", desc: "โซเวียตรอดชีวิตครบ 15 Waves และปราบจอมพลเพาลุสสำเร็จ! ปักธงค้อนเคียวฉลองชัยเหนือซากเมืองสตาลินกราด!" },
-            2: { title: "2. Christmas Truce Miracle", icon: "🤝", desc: "ทั้งสองฝ่ายบรรลุข้อตกลงสงบศึกใน Wave 13 หยุดยิงและจับมือกันท่ามกลางหิมะ" },
-            3: { title: "3. City Fallen", icon: "💥", desc: "ป้อมปราการสตาลินกราดถูกถล่มพังทลาย หลอด City HP เหลือ 0 ฝั่งเยอรมันยึดเมืองสำเร็จ" },
-            4: { title: "4. Starvation Defeat", icon: "🍞", desc: "เสบียงอาหารหมดเกลี้ยง หลอด Food เหลือ 0 กองทัพโซเวียตต้องพ่ายแพ้แก่ความอดอยาก" },
-            5: { title: "5. The Frozen Graveyard", icon: "❄️", desc: "พายุหิมะแช่แข็งกลืนกินเมือง หลอด Warmth เหลือ 0 ทหารทั้งหมดแช่แข็งในสุสานหิมะ" },
-            6: { title: "6. Wunderwaffe Atomic Strike", icon: "☢️", desc: "เยอรมันสะสมการ์ดอาวุธลับครบ 3 ใบ ปล่อยนิวเคลียร์ล้างเมืองชนะเกมทันที!" },
-            7: { title: "7. Mutual Annihilation", icon: "💀", desc: "City HP และ Boss HP ลดลงเหลือ 0 พร้อมกันในคืนสุดท้าย พินาศย่อยยับทั้งสองฝ่าย ไร้ผู้ชนะ!" }
+            1: { 
+                title: "1. Red Army Triumph", 
+                icon: "🔴", 
+                img: "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=600&auto=format&fit=crop&q=80",
+                desc: "โซเวียตรอดชีวิตครบ 15 Waves และปราบจอมพลเพาลุสสำเร็จ! ปักธงค้อนเคียวฉลองชัยเหนือซากเมืองสตาลินกราด!" 
+            },
+            2: { 
+                title: "2. Christmas Truce Miracle", 
+                icon: "🤝", 
+                img: "https://images.unsplash.com/photo-1543589077-47d81606c1bf?w=600&auto=format&fit=crop&q=80",
+                desc: "ทั้งสองฝ่ายบรรลุข้อตกลงสงบศึกใน Wave 13 หยุดยิงและจับมือกันท่ามกลางหิมะ" 
+            },
+            3: { 
+                title: "3. City Fallen", 
+                icon: "💥", 
+                img: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80",
+                desc: "ป้อมปราการสตาลินกราดถูกถล่มพังทลาย หลอด City HP เหลือ 0 ฝั่งเยอรมันยึดเมืองสำเร็จ" 
+            },
+            4: { 
+                title: "4. Starvation Defeat", 
+                icon: "🍞", 
+                img: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&auto=format&fit=crop&q=80",
+                desc: "เสบียงอาหารหมดเกลี้ยง หลอด Food เหลือ 0 กองทัพโซเวียตต้องพ่ายแพ้แก่ความอดอยาก" 
+            },
+            5: { 
+                title: "5. The Frozen Graveyard", 
+                icon: "❄️", 
+                img: "https://images.unsplash.com/photo-1486496146582-9ffcd0b2b2b7?w=600&auto=format&fit=crop&q=80",
+                desc: "พายุหิมะแช่แข็งกลืนกินเมือง หลอด Warmth เหลือ 0 ทหารทั้งหมดแช่แข็งในสุสานหิมะ" 
+            },
+            6: { 
+                title: "6. Wunderwaffe Atomic Strike", 
+                icon: "☢️", 
+                img: "https://images.unsplash.com/photo-1541185933-ef5d8ed016c2?w=600&auto=format&fit=crop&q=80",
+                desc: "เยอรมันสะสมการ์ดอาวุธลับครบ 3 ใบ ปล่อยนิวเคลียร์ล้างเมืองชนะเกมทันที!" 
+            },
+            7: { 
+                title: "7. Mutual Annihilation", 
+                icon: "💀", 
+                img: "https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=600&auto=format&fit=crop&q=80",
+                desc: "City HP และ Boss HP ลดลงเหลือ 0 พร้อมกันในคืนสุดท้าย พินาศย่อยยับทั้งสองฝ่าย ไร้ผู้ชนะ!" 
+            }
         };
 
         function renderEndingOverlay(endingId) {
@@ -699,6 +733,10 @@ const firebaseConfig = {
             document.getElementById('ending-icon').innerText = data.icon;
             document.getElementById('ending-title').innerText = data.title;
             document.getElementById('ending-desc').innerText = data.desc;
+            
+            const imgEl = document.getElementById('ending-img');
+            if (imgEl) imgEl.src = data.img;
+
             document.getElementById('overlay-ending').classList.remove('hidden');
         }
 
