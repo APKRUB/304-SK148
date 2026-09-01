@@ -3,154 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Game - Player</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background: #f4f4f9; padding: 20px; }
-        .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .hidden { display: none; }
-        input, button { padding: 10px; margin: 10px 0; width: 80%; font-size: 16px; border-radius: 5px; }
-        button { background: #007bff; color: white; border: none; cursor: pointer; }
-        button:hover { background: #0056b3; }
-        .choice-btn { background: #28a745; margin: 5px; width: 45%; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <!-- หน้า Login ผู้เล่น -->
-        <div id="login-section">
-            <h2>เข้าร่วมเกม</h2>
-            <p id="room-status" style="color: red;">กำลังตรวจสอบสถานะห้อง...</p>
-            <input type="text" id="player-name" placeholder="กรอกชื่อของคุณ" disabled>
-            <button id="join-btn" disabled onclick="joinGame()">เข้าสู่ห้อง</button>
-        </div>
-
-        <!-- หน้ารอ -->
-        <div id="waiting-section" class="hidden">
-            <h2>รอแอดมินเริ่มเกม...</h2>
-            <p>เตรียมตัวให้พร้อม!</p>
-        </div>
-
-        <!-- หน้าคำถาม -->
-        <div id="question-section" class="hidden">
-            <h2 id="question-text">คำถามจะขึ้นที่นี่</h2>
-            <div id="choices-container"></div>
-            <div id="text-answer-container" class="hidden">
-                <input type="text" id="text-answer" placeholder="พิมพ์คำตอบ...">
-                <button onclick="submitTextAnswer()">ส่งคำตอบ</button>
-            </div>
-        </div>
-
-        <!-- หน้าผลลัพธ์ -->
-        <div id="result-section" class="hidden">
-            <h2 id="result-text">รอผล...</h2>
-        </div>
-    </div>
-
-    <!-- Firebase SDK (ใช้ v8 เพื่อความง่ายในการเขียนแบบไม่ต้องมี Bundler) -->
+    <title>ร่วมสนุกตอบคำถาม APTech</title>
+    
+    <!-- ดึง Firebase SDK มาใช้โดยตรงในหน้า HTML -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-    <script>
-        // 🛑 นำ config จาก Firebase ของคุณมาใส่ตรงนี้ 🛑
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f2f1; text-align: center; margin: 0; padding: 20px; }
+        .container { max-width: 600px; margin: 50px auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        input[type="text"] { width: 80%; padding: 15px; font-size: 18px; border: 2px solid #ddd; border-radius: 8px; margin-bottom: 20px; box-sizing: border-box; }
+        button { background-color: #4CAF50; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 8px; cursor: pointer; transition: 0.3s; width: 100%; box-sizing: border-box; }
+        button:hover { background-color: #45a049; }
+        .choice-btn { margin: 10px 0; background-color: #2196F3; }
+        .choice-btn:hover { background-color: #1976D2; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="login-section">
+    <h2>กรอกชื่อเพื่อเข้าร่วม</h2>
+    <input type="text" id="playerName" placeholder="ชื่อของคุณ...">
+    <button onclick="joinGame()">เข้าสู่ระบบ</button>
+</div>
+
+<div class="container hidden" id="waiting-section">
+    <h2>รอแอดมินเริ่มเกม...</h2>
+    <p>เตรียมตัวให้พร้อม!</p>
+</div>
+
+<div class="container hidden" id="question-section">
+    <h2 id="q-text">คำถามจะแสดงที่นี่</h2>
+    <div id="choices-container"></div>
+</div>
+
+<div class="container hidden" id="result-section">
+    <h2 id="result-text">รอผล...</h2>
+</div>
+
+<script>
+    // ==========================================
+    // 1. ใส่ข้อมูล Firebase ของคุณตรงนี้ 👇
+    // ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyBLr_JDM3JOriV9quYtTPz1PdZaczvIGkw",
   authDomain: "modals-304-148.firebaseapp.com",
   projectId: "modals-304-148",
   storageBucket: "modals-304-148.firebasestorage.app",
   messagingSenderId: "955363561060",
-  appId: "1:955363561060:web:d2ce1c6482ca9ebcd11971",
-  measurementId: "G-BHP5XZ90CV"
+  appId: "1:955363561060:web:795f503d15d9feb2d11971",
+  measurementId: "G-542R13GR8Z"
 };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+    
+    // เริ่มต้นเชื่อมต่อ Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    
+    // ==========================================
+    // 2. ระบบควบคุมเกมฝั่งผู้เล่น
+    // ==========================================
+    let myName = "";
+    
+    function joinGame() {
+        myName = document.getElementById('playerName').value;
+        if(myName.trim() === "") return alert("กรุณากรอกชื่อ!");
+        
+        document.getElementById('login-section').classList.add('hidden');
+        document.getElementById('waiting-section').classList.remove('hidden');
+        
+        // ลงทะเบียนชื่อในฐานข้อมูล
+        db.ref('players/' + myName).set({ score: 0, currentAnswer: "" });
+        
+        // ฟังสัญญาณจากแอดมินแบบ Real-time
+        listenToGame();
+    }
 
-        let playerName = "";
+    function listenToGame() {
+        db.ref('gameState').on('value', (snapshot) => {
+            const state = snapshot.val();
+            if(!state) return;
 
-        // ตรวจสอบว่าแอดมินเปิดห้องหรือยัง
-        db.ref("roomState/isOpen").on("value", (snapshot) => {
-            const isOpen = snapshot.val();
-            const statusText = document.getElementById("room-status");
-            const nameInput = document.getElementById("player-name");
-            const joinBtn = document.getElementById("join-btn");
-
-            if (isOpen) {
-                statusText.innerText = "ห้องเปิดแล้ว! กรอกชื่อได้เลย";
-                statusText.style.color = "green";
-                nameInput.disabled = false;
-                joinBtn.disabled = false;
-            } else {
-                statusText.innerText = "ห้องยังไม่เปิด รอก่อนนะ...";
-                statusText.style.color = "red";
-                nameInput.disabled = true;
-                joinBtn.disabled = true;
+            if(state.status === "waiting") {
+                showSection('waiting-section');
+                document.querySelector('#waiting-section h2').innerText = "รอแอดมินเริ่มเกม...";
+            } 
+            else if(state.status === "playing") {
+                showSection('question-section');
+                document.getElementById('q-text').innerText = state.currentQuestionText;
+                renderChoices(state);
+            } 
+            else if(state.status === "revealed") {
+                showSection('result-section');
+                checkAnswer(state.correctAnswer);
             }
         });
+    }
 
-        function joinGame() {
-            playerName = document.getElementById("player-name").value;
-            if (!playerName) return alert("กรุณากรอกชื่อ!");
-            
-            // บันทึกชื่อลง DB
-            db.ref("players/" + playerName).set({ score: 0 });
-            
-            document.getElementById("login-section").classList.add("hidden");
-            document.getElementById("waiting-section").classList.remove("hidden");
-            listenToGameState();
-        }
-
-        function listenToGameState() {
-            db.ref("roomState").on("value", (snapshot) => {
-                const state = snapshot.val();
-                if (state.status === "playing") {
-                    showQuestion(state.currentQuestion);
-                } else if (state.status === "waitingNext") {
-                    showWaitingScreen();
-                }
+    function renderChoices(state) {
+        const container = document.getElementById('choices-container');
+        container.innerHTML = "";
+        
+        if(state.type === "choice") {
+            state.options.forEach((opt) => {
+                let btn = document.createElement('button');
+                btn.className = "choice-btn";
+                btn.innerText = opt;
+                btn.onclick = () => submitAnswer(opt);
+                container.appendChild(btn);
             });
+        } else {
+            let input = document.createElement('input');
+            input.type = "text";
+            input.id = "text-answer";
+            input.placeholder = "พิมพ์คำตอบที่นี่...";
+            
+            let btn = document.createElement('button');
+            btn.innerText = "ส่งคำตอบ";
+            btn.onclick = () => submitAnswer(document.getElementById('text-answer').value);
+            
+            container.appendChild(input);
+            container.appendChild(btn);
         }
+    }
 
-        function showQuestion(questionData) {
-            document.getElementById("waiting-section").classList.add("hidden");
-            document.getElementById("result-section").classList.add("hidden");
-            document.getElementById("question-section").classList.remove("hidden");
-            
-            document.getElementById("question-text").innerText = questionData.text;
-            const choicesContainer = document.getElementById("choices-container");
-            const textContainer = document.getElementById("text-answer-container");
-            
-            choicesContainer.innerHTML = "";
-            
-            if (questionData.type === "choice") {
-                choicesContainer.classList.remove("hidden");
-                textContainer.classList.add("hidden");
-                questionData.options.forEach(opt => {
-                    const btn = document.createElement("button");
-                    btn.className = "choice-btn";
-                    btn.innerText = opt;
-                    btn.onclick = () => submitAnswer(opt);
-                    choicesContainer.appendChild(btn);
-                });
+    function submitAnswer(ans) {
+        if(ans.trim() === "") return alert("กรุณาใส่คำตอบ!");
+        db.ref('players/' + myName).update({ currentAnswer: ans });
+        showSection('waiting-section'); 
+        document.querySelector('#waiting-section h2').innerText = "ส่งคำตอบแล้ว รอเปิดเฉลย!";
+    }
+
+    function checkAnswer(correct) {
+        db.ref('players/' + myName + '/currentAnswer').once('value').then((snap) => {
+            let myAns = snap.val();
+            let resultText = document.getElementById('result-text');
+            if(myAns === correct) {
+                resultText.innerText = "🎉 ตอบถูก!";
+                resultText.style.color = "green";
             } else {
-                choicesContainer.classList.add("hidden");
-                textContainer.classList.remove("hidden");
+                resultText.innerText = "❌ ตอบผิด! (เฉลย: " + correct + ")";
+                resultText.style.color = "red";
             }
-        }
+        });
+    }
 
-        function submitAnswer(answer) {
-            db.ref("players/" + playerName + "/currentAnswer").set(answer);
-            document.getElementById("question-section").classList.add("hidden");
-            document.getElementById("result-section").classList.remove("hidden");
-            document.getElementById("result-text").innerText = "ส่งคำตอบแล้ว รอแอดมินเฉลย...";
-        }
-
-        function submitTextAnswer() {
-            const ans = document.getElementById("text-answer").value;
-            submitAnswer(ans);
-        }
-
-        function showWaitingScreen() {
-            document.getElementById("result-text").innerText = "เตรียมพบกับข้อถัดไป...";
-        }
-    </script>
+    function showSection(id) {
+        document.querySelectorAll('.container').forEach(el => el.classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+    }
+</script>
 </body>
 </html>
