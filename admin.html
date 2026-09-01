@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel</title>
+    <style>
+        body { font-family: sans-serif; background: #333; color: white; padding: 20px; }
+        .container { background: #444; padding: 20px; border-radius: 8px; max-width: 800px; margin: auto; }
+        .hidden { display: none; }
+        button { padding: 10px; margin: 5px; cursor: pointer; background: #ff9800; border: none; border-radius: 5px; font-weight: bold;}
+        input, select { padding: 8px; margin: 5px; width: 80%; }
+        .question-box { border: 1px solid #777; padding: 10px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ล็อกอินแอดมิน -->
+        <div id="admin-login">
+            <h2>Admin Login</h2>
+            <input type="password" id="admin-pw" placeholder="รหัสผ่าน">
+            <button onclick="loginAdmin()">เข้าสู่ระบบ</button>
+        </div>
+
+        <!-- แผงควบคุมแอดมิน -->
+        <div id="admin-dashboard" class="hidden">
+            <h2>แผงควบคุมระบบ (Admin)</h2>
+            <button onclick="toggleRoom(true)" style="background: #28a745; color: white;">เปิดห้องให้คนเข้า</button>
+            <button onclick="toggleRoom(false)" style="background: #dc3545; color: white;">ปิดห้อง</button>
+            
+            <hr>
+            <h3>จัดการคำถาม</h3>
+            <select id="q-type" onchange="toggleQType()">
+                <option value="choice">ปรนัย (มีตัวเลือก)</option>
+                <option value="text">เติมคำตอบ</option>
+            </select>
+            <input type="text" id="q-text" placeholder="พิมพ์คำถาม...">
+            
+            <div id="choices-setup">
+                <input type="text" id="c1" placeholder="ตัวเลือก 1">
+                <input type="text" id="c2" placeholder="ตัวเลือก 2">
+                <input type="text" id="c-ans" placeholder="คำตอบที่ถูกต้อง (ต้องตรงกับตัวเลือก)">
+            </div>
+            <div id="text-setup" class="hidden">
+                <input type="text" id="t-ans" placeholder="คำตอบที่ถูกต้อง">
+            </div>
+            
+            <button onclick="addQuestion()">+ เพิ่มคำถามลงระบบ</button>
+
+            <hr>
+            <h3>ควบคุมเกม</h3>
+            <button onclick="startGame()">เริ่มข้อที่ 1</button>
+            <button onclick="nextQuestion()">ไปข้อถัดไป</button>
+            
+            <div id="player-list">
+                <h3>ผู้เล่นในห้อง</h3>
+                <ul id="players-ul"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        // 🛑 นำ config จาก Firebase ชุดเดียวกับหน้า index.html มาใส่ 🛑
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID"
+            // ใส่ให้ครบเหมือนด้านบน
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let questions = [];
+        let currentQIndex = -1;
+
+        function loginAdmin() {
+            const pw = document.getElementById("admin-pw").value;
+            if (pw === "admin123") {
+                document.getElementById("admin-login").classList.add("hidden");
+                document.getElementById("admin-dashboard").classList.remove("hidden");
+                listenToPlayers();
+            } else {
+                alert("รหัสผ่านผิด!");
+            }
+        }
+
+        function toggleRoom(isOpen) {
+            db.ref("roomState/isOpen").set(isOpen);
+            alert(isOpen ? "ห้องเปิดแล้ว!" : "ห้องปิดแล้ว!");
+            // เคลียร์ข้อมูลผู้เล่นเก่าเมื่อเปิดห้องใหม่
+            if(isOpen) db.ref("players").remove();
+        }
+
+        function toggleQType() {
+            const type = document.getElementById("q-type").value;
+            if(type === "choice") {
+                document.getElementById("choices-setup").classList.remove("hidden");
+                document.getElementById("text-setup").classList.add("hidden");
+            } else {
+                document.getElementById("choices-setup").classList.add("hidden");
+                document.getElementById("text-setup").classList.remove("hidden");
+            }
+        }
+
+        function addQuestion() {
+            const type = document.getElementById("q-type").value;
+            const text = document.getElementById("q-text").value;
+            let qData = { type: type, text: text };
+
+            if(type === "choice") {
+                qData.options = [document.getElementById("c1").value, document.getElementById("c2").value];
+                qData.correct = document.getElementById("c-ans").value;
+            } else {
+                qData.correct = document.getElementById("t-ans").value;
+            }
+            questions.push(qData);
+            alert("เพิ่มคำถามแล้ว! (รวม " + questions.length + " ข้อ)");
+        }
+
+        function startGame() {
+            if(questions.length === 0) return alert("กรุณาเพิ่มคำถามก่อน!");
+            currentQIndex = 0;
+            sendQuestionToPlayers();
+        }
+
+        function nextQuestion() {
+            currentQIndex++;
+            if(currentQIndex >= questions.length) {
+                alert("จบเกม!");
+                db.ref("roomState").set({ status: "ended", isOpen: false });
+                return;
+            }
+            sendQuestionToPlayers();
+        }
+
+        function sendQuestionToPlayers() {
+            db.ref("roomState").set({
+                isOpen: false, // ปิดรับคนเพิ่มเมื่อเริ่มเกม
+                status: "playing",
+                currentQuestion: questions[currentQIndex]
+            });
+        }
+
+        // ดูชื่อผู้เล่นแบบ Real-time
+        function listenToPlayers() {
+            db.ref("players").on("value", (snapshot) => {
+                const ul = document.getElementById("players-ul");
+                ul.innerHTML = "";
+                snapshot.forEach(child => {
+                    const li = document.createElement("li");
+                    const data = child.val();
+                    li.innerText = `${child.key} (ตอบล่าสุด: ${data.currentAnswer || "ยังไม่ตอบ"})`;
+                    ul.appendChild(li);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
