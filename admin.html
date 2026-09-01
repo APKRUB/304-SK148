@@ -63,13 +63,15 @@
 
     <script>
         // 🛑 นำ config จาก Firebase ชุดเดียวกับหน้า index.html มาใส่ 🛑
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
-            projectId: "YOUR_PROJECT_ID"
-            // ใส่ให้ครบเหมือนด้านบน
-        };
+const firebaseConfig = {
+  apiKey: "AIzaSyBLr_JDM3JOriV9quYtTPz1PdZaczvIGkw",
+  authDomain: "modals-304-148.firebaseapp.com",
+  projectId: "modals-304-148",
+  storageBucket: "modals-304-148.firebasestorage.app",
+  messagingSenderId: "955363561060",
+  appId: "1:955363561060:web:d2ce1c6482ca9ebcd11971",
+  measurementId: "G-BHP5XZ90CV"
+};
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
