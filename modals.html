@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minimal Quiz App</title>
     <style>
+        /* 🎨 ธีม Minimalist: เน้นสีขาว-เทา-ดำ สบายตา พื้นที่ว่างเยอะๆ */
         :root {
             --bg-color: #FAFAFA;
             --text-main: #333333;
             --primary: #000000;
             --btn-hover: #555555;
+            --correct: #A5D6A7;
+            --wrong: #EF9A9A;
             --card-bg: #FFFFFF;
         }
 
@@ -32,9 +35,11 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.05);
             width: 100%;
             max-width: 400px;
+            /* ซ่อนทุกหน้าเป็นค่าเริ่มต้น */
             display: none; 
         }
 
+        /* เปิดแสดงเฉพาะหน้าที่มีคลาส active */
         .active {
             display: block;
         }
@@ -51,11 +56,6 @@
             outline: none;
         }
         input:focus { border-color: var(--primary); }
-
-        /* 💡 ทริค: ใช้ CSS ทำจุดดำๆ บังข้อความ แทนการใช้ type="password" */
-        .mask-text {
-            -webkit-text-security: disc;
-        }
 
         button {
             width: 100%;
@@ -97,58 +97,159 @@
 </head>
 <body>
 
-    <!-- 🎮 ฝั่งผู้เล่น -->
+    <!-- ========================================== -->
+    <!-- 🎮 ฝั่งผู้เล่น (PLAYER VIEWS) -->
+    <!-- ========================================== -->
+
+    <!-- 1. หน้าเข้าร่วมเกม -->
     <div id="view-player-join" class="container active">
         <h2>เข้าร่วมเกม</h2>
         <input type="text" id="playerName" placeholder="กรอกชื่อของคุณ">
         <button onclick="joinGame()">Join Game</button>
-        <span class="nav-link" onclick="switchView('view-host-access')">สำหรับผู้คุมห้อง</span>
+        <span class="nav-link" onclick="switchView('view-admin-login')">สำหรับผู้ดูแลระบบ (Admin)</span>
     </div>
 
-    <!-- ... (หน้าอื่นๆ ของผู้เล่น ยังคงเหมือนเดิม) ... -->
+    <!-- 2. หน้ารอเกมเริ่ม -->
     <div id="view-player-waiting" class="container">
-        <h2>รอเริ่มเกม...</h2>
+        <h2>รอ Admin เริ่มเกม...</h2>
+        <p>เตรียมตัวให้พร้อม!</p>
+        <!-- SDK: รอรับ event state == 'playing' จาก Admin -->
     </div>
 
-    <!-- ⚙️ ฝั่งผู้คุมห้อง (ซ่อนคำว่า Admin) -->
-    <div id="view-host-access" class="container">
-        <h2>Host Access</h2>
-        <!-- 💡 เปลี่ยนเป็น type="text" แล้วใส่คลาสบังข้อความแทน -->
-        <input type="text" id="entryKey" class="mask-text" placeholder="Enter PIN">
-        <button onclick="verifyHost()">Enter</button>
+    <!-- 3. หน้าตอบคำถาม -->
+    <div id="view-player-question" class="container">
+        <div class="timer" id="playerTimer">20</div>
+        <h3 id="questionText">คำถามข้อที่ 1: ... ?</h3>
+        
+        <!-- โหมดตัวเลือก -->
+        <div id="choice-mode">
+            <button class="choice-btn" onclick="submitAnswer('A')">A</button>
+            <button class="choice-btn" onclick="submitAnswer('B')">B</button>
+            <button class="choice-btn" onclick="submitAnswer('C')">C</button>
+            <button class="choice-btn" onclick="submitAnswer('D')">D</button>
+        </div>
+
+        <!-- โหมดเติมคำ (ซ่อนไว้ก่อน) -->
+        <div id="fill-mode" style="display: none;">
+            <input type="text" id="fillAnswer" placeholder="พิมพ์คำตอบที่นี่">
+            <button onclick="submitAnswer(document.getElementById('fillAnswer').value)">ส่งคำตอบ</button>
+        </div>
+    </div>
+
+    <!-- 4. หน้ารอผล -->
+    <div id="view-player-wait-result" class="container">
+        <h2>ส่งคำตอบแล้ว!</h2>
+        <p>รอแอดมินเฉลย...</p>
+    </div>
+
+    <!-- 5. หน้าแสดงผลว่าถูกหรือผิด -->
+    <div id="view-player-result" class="container">
+        <h2 id="resultMsg">คุณตอบถูก! 🎉</h2>
+        <p>เตรียมตัวไปข้อถัดไป</p>
+    </div>
+
+    <!-- 6. หน้า Leaderboard -->
+    <div id="view-leaderboard" class="container">
+        <h2>🏆 Leaderboard</h2>
+        <p>1. ...</p>
+        <p>2. ...</p>
+        <p>3. ...</p>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- ⚙️ ฝั่งผู้ดูแลระบบ (ADMIN VIEWS) -->
+    <!-- ========================================== -->
+
+    <!-- 1. หน้า Admin Login -->
+    <div id="view-admin-login" class="container">
+        <h2>Admin Access</h2>
+        <input type="password" id="adminPass" placeholder="Enter PIN">
+        <button onclick="adminLogin()">Login</button>
         <span class="nav-link" onclick="switchView('view-player-join')">กลับไปหน้าผู้เล่น</span>
     </div>
 
-    <div id="view-host-dash" class="container">
-        <h2>Host Dashboard</h2>
-        <button onclick="switchView('view-player-join')">กลับหน้าแรก</button>
+    <!-- 2. หน้า Dashboard / จัดการห้อง -->
+    <div id="view-admin-dash" class="container">
+        <h2>Admin Dashboard</h2>
+        <button onclick="switchView('view-admin-editor')">จัดการคำถาม (Editor)</button>
+        <button onclick="switchView('view-admin-live')">เริ่มควบคุมเกม (Live)</button>
     </div>
 
+    <!-- 3. หน้าจัดการคำถาม (Editor) -->
+    <div id="view-admin-editor" class="container">
+        <h2>จัดการคำถาม</h2>
+        <p>[ เพิ่ม/ลบคำถาม | สลับโหมด | ตั้งเวลา ]</p>
+        <!-- SDK: บันทึก Data ลง Database ตรงนี้ -->
+        <button onclick="switchView('view-admin-dash')">กลับ</button>
+    </div>
+
+    <!-- 4. หน้า Live Controller -->
+    <div id="view-admin-live" class="container">
+        <h2>แผงควบคุมเกม</h2>
+        <div class="timer" id="adminTimer">20</div>
+        <button onclick="startQuestion()">เริ่มข้อถัดไป</button>
+        <button onclick="showAnswer()">เฉลยคำตอบ (ผู้เล่นจะเห็นผล)</button>
+        <button onclick="switchView('view-leaderboard')">โชว์ Leaderboard</button>
+        <button onclick="switchView('view-admin-dash')" style="background:#888;">จบเกม</button>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 🧠 JAVASCRIPT (การทำงานของระบบ) -->
+    <!-- ========================================== -->
     <script>
+        // ฟังก์ชันสลับหน้าจอ (Router)
         function switchView(viewId) {
+            // ซ่อนทุกหน้า
             const views = document.querySelectorAll('.container');
             views.forEach(view => view.classList.remove('active'));
+            // เปิดหน้าตาที่ต้องการ
             document.getElementById(viewId).classList.add('active');
         }
 
-        // 💡 เปลี่ยนชื่อฟังก์ชันและตัวแปร ไม่ให้มีคำว่า login หรือ password
-        function verifyHost() {
-            const secretVal = document.getElementById('entryKey').value;
-            
-            // เช็กค่าแบบเงียบๆ
-            if (secretVal === "admin123") {
-                document.getElementById('entryKey').value = ""; 
-                switchView('view-host-dash');
+        // --- ระบบล็อกอิน Admin (จุดที่คุณอยากได้) ---
+        function adminLogin() {
+            const pass = document.getElementById('adminPass').value;
+            // เช็กรหัสผ่านแบบ Hardcode ตรงๆ หลบ AI กวนใจ!
+            if (pass === "admin123") {
+                document.getElementById('adminPass').value = ""; // เคลียร์ช่องรหัส
+                switchView('view-admin-dash');
             } else {
-                alert("รหัสไม่ถูกต้อง!");
+                alert("รหัสผ่านไม่ถูกต้อง!");
             }
         }
 
+        // --- ฝั่งผู้เล่น ---
         function joinGame() {
             const name = document.getElementById('playerName').value;
             if(name.trim() === "") return alert("กรุณาใส่ชื่อ!");
+            
+            // TODO: SDK (Firebase/Supabase) เพิ่มผู้เล่นใหม่เข้า Database
+            
             switchView('view-player-waiting');
         }
+
+        function submitAnswer(answer) {
+            // TODO: SDK ส่งคำตอบไปเก็บไว้ใน Database พร้อมเวลาที่ตอบ
+            switchView('view-player-wait-result');
+        }
+
+        // --- ฝั่ง Admin (ปุ่มควบคุม) ---
+        function startQuestion() {
+            // TODO: SDK เปลี่ยนสถานะเกมใน Database เป็น "playing" 
+            // ฝั่งผู้เล่นจะเห็นหน้า 'view-player-question' อัตโนมัติ
+            
+            // ตัวอย่างจำลองนับเวลา (Admin view)
+            document.getElementById('adminTimer').innerText = "กำลังจับเวลา...";
+            alert("สมมติว่าส่งสัญญาณเริ่มข้อใหม่ไปให้ผู้เล่นทุกคนแล้ว!");
+        }
+
+        function showAnswer() {
+            // TODO: SDK เปลี่ยนสถานะเกมเป็น "show_result"
+            // ระบบจะคำนวณว่าใครถูก/ผิด แล้วดันหน้า 'view-player-result' ให้ผู้เล่น
+            alert("สมมติว่าส่งสัญญาณเฉลยไปให้ผู้เล่นแล้ว!");
+        }
+
     </script>
 </body>
 </html>
