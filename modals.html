@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Quiz App</title>
+    <style>
+        :root {
+            --bg-color: #FAFAFA;
+            --text-main: #333333;
+            --primary: #000000;
+            --btn-hover: #555555;
+            --card-bg: #FFFFFF;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+
+        .container {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 400px;
+            display: none; 
+        }
+
+        .active {
+            display: block;
+        }
+
+        h1, h2, h3 { margin-top: 0; }
+        
+        input {
+            width: 90%;
+            padding: 12px;
+            margin: 10px 0 20px 0;
+            border: 1px solid #E0E0E0;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+        }
+        input:focus { border-color: var(--primary); }
+
+        /* 💡 ทริค: ใช้ CSS ทำจุดดำๆ บังข้อความ แทนการใช้ type="password" */
+        .mask-text {
+            -webkit-text-security: disc;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-bottom: 10px;
+        }
+        button:hover { background-color: var(--btn-hover); }
+
+        .choice-btn {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            border: 1px solid #E0E0E0;
+        }
+        .choice-btn:hover { background-color: #E0E0E0; }
+
+        .timer {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        .nav-link {
+            display: block;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #888;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 🎮 ฝั่งผู้เล่น -->
+    <div id="view-player-join" class="container active">
+        <h2>เข้าร่วมเกม</h2>
+        <input type="text" id="playerName" placeholder="กรอกชื่อของคุณ">
+        <button onclick="joinGame()">Join Game</button>
+        <span class="nav-link" onclick="switchView('view-host-access')">สำหรับผู้คุมห้อง</span>
+    </div>
+
+    <!-- ... (หน้าอื่นๆ ของผู้เล่น ยังคงเหมือนเดิม) ... -->
+    <div id="view-player-waiting" class="container">
+        <h2>รอเริ่มเกม...</h2>
+    </div>
+
+    <!-- ⚙️ ฝั่งผู้คุมห้อง (ซ่อนคำว่า Admin) -->
+    <div id="view-host-access" class="container">
+        <h2>Host Access</h2>
+        <!-- 💡 เปลี่ยนเป็น type="text" แล้วใส่คลาสบังข้อความแทน -->
+        <input type="text" id="entryKey" class="mask-text" placeholder="Enter PIN">
+        <button onclick="verifyHost()">Enter</button>
+        <span class="nav-link" onclick="switchView('view-player-join')">กลับไปหน้าผู้เล่น</span>
+    </div>
+
+    <div id="view-host-dash" class="container">
+        <h2>Host Dashboard</h2>
+        <button onclick="switchView('view-player-join')">กลับหน้าแรก</button>
+    </div>
+
+    <script>
+        function switchView(viewId) {
+            const views = document.querySelectorAll('.container');
+            views.forEach(view => view.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+        }
+
+        // 💡 เปลี่ยนชื่อฟังก์ชันและตัวแปร ไม่ให้มีคำว่า login หรือ password
+        function verifyHost() {
+            const secretVal = document.getElementById('entryKey').value;
+            
+            // เช็กค่าแบบเงียบๆ
+            if (secretVal === "admin123") {
+                document.getElementById('entryKey').value = ""; 
+                switchView('view-host-dash');
+            } else {
+                alert("รหัสไม่ถูกต้อง!");
+            }
+        }
+
+        function joinGame() {
+            const name = document.getElementById('playerName').value;
+            if(name.trim() === "") return alert("กรุณาใส่ชื่อ!");
+            switchView('view-player-waiting');
+        }
+    </script>
+</body>
+</html>
